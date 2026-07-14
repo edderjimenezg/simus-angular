@@ -74,7 +74,7 @@ export class SchoolsPageComponent implements OnInit {
   }
 
   backToEcosystem(): void {
-    this.navigation.navigate('ecosistema');
+    this.navigation.navigate('simus');
   }
 
   openSchool(schoolId: string): void {

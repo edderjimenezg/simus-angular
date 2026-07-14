@@ -3,7 +3,7 @@
     backLabel="Ejes"
     [current]="item.component.name"
     [title]="item.component.name"
-    [subtitle]="'Eje ' + item.eje.id + ' · Componente ' + item.component.id"
+    [subtitle]="item.eje.name"
     maxWidthClass="max-w-5xl"
     (onBack)="navigation.navigate(pageId)"
   ></app-compact-hero>

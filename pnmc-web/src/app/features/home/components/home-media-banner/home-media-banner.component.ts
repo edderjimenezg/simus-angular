@@ -31,10 +31,10 @@ export class HomeMediaBannerComponent implements OnInit, OnDestroy {
   slides: Slide[] = [
     {
       url: HOME_BANNER_IMAGES[0] || '',
-      tag: 'Mapa Ecosistémico',
-      title: 'Participa en el mapeo musical de Colombia',
-      desc: 'Registra tu proceso, organización, festival, mercado, colectivo, espacio o perfil individual dentro de la lectura territorial del ecosistema musical.',
-      cta: 'Haz parte de este mapeo',
+      tag: 'SIMUS',
+      title: 'Sé parte del SIMUS',
+      desc: 'Registra tu proceso, organización, festival, mercado, colectivo, espacio o perfil individual en el Sistema de Información de la Música y haz parte de esta lectura territorial.',
+      cta: 'Ser parte del SIMUS',
       actionId: 'mapa'
     },
     {

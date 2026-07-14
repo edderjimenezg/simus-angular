@@ -13,7 +13,6 @@ export const PAGE_IDS = {
   noticias: 'noticias',
   agenda: 'agenda',
   mapa: 'mapa',
-  ecosistema: 'ecosistema',
   simus: 'simus',
   mapaParticipa: 'mapa-participa',
   admin: 'admin',
@@ -33,7 +32,6 @@ export const PAGE_PATHS: Record<string, string> = {
   [PAGE_IDS.noticias]: '/noticias',
   [PAGE_IDS.agenda]: '/agenda',
   [PAGE_IDS.mapa]: '/mapa',
-  [PAGE_IDS.ecosistema]: '/ecosistema',
   [PAGE_IDS.simus]: '/simus',
   [PAGE_IDS.mapaParticipa]: '/mapa/participa',
   [PAGE_IDS.admin]: '/admin',
@@ -60,7 +58,6 @@ export class NavigationService {
     [PAGE_IDS.noticias]: 'Noticias',
     [PAGE_IDS.agenda]: 'Agenda',
     [PAGE_IDS.mapa]: 'Mapa ecosistémico',
-    [PAGE_IDS.ecosistema]: 'Ecosistema musical',
     [PAGE_IDS.simus]: 'SIMUS',
     [PAGE_IDS.admin]: 'Administración',
     [PAGE_IDS.colaboradores]: 'Colaboradores',
@@ -102,7 +99,6 @@ export class NavigationService {
     { name: 'Noticias', id: PAGE_IDS.noticias },
     { name: 'Agenda', id: PAGE_IDS.agenda },
     { name: 'Mapa Ecosistémico', id: PAGE_IDS.mapa },
-    { name: 'Ecosistema', id: PAGE_IDS.ecosistema },
     { name: 'SIMUS', id: PAGE_IDS.simus },
   ];
 
@@ -129,9 +125,6 @@ export class NavigationService {
     const normalizedPath = this.normalizePathname(path);
 
     const pathSegments = normalizedPath.split('/').filter(Boolean);
-    if (normalizedPath === '/ecosistema' || normalizedPath.startsWith('/ecosistema/')) {
-      return PAGE_IDS.ecosistema;
-    }
     if (normalizedPath === '/simus' || normalizedPath.startsWith('/simus/')) {
       return PAGE_IDS.simus;
     }

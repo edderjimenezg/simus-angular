@@ -42,20 +42,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/map/pages/mapa-ecosistemico-page/mapa-ecosistemico-page.component').then(m => m.MapaEcosistemicoPageComponent),
   },
   {
-    path: 'ecosistema/escuelas/:schoolId',
+    path: 'simus/escuelas/:schoolId',
     loadComponent: () => import('./features/ecosystem/pages/school-detail-page/school-detail-page.component').then(m => m.SchoolDetailPageComponent),
   },
   {
-    path: 'ecosistema/escuelas',
+    path: 'simus/escuelas',
     loadComponent: () => import('./features/ecosystem/pages/schools-page/schools-page.component').then(m => m.SchoolsPageComponent),
-  },
-  {
-    path: 'ecosistema/:module',
-    loadComponent: () => import('./features/ecosystem/pages/ecosystem-coming-soon-page/ecosystem-coming-soon-page.component').then(m => m.EcosystemComingSoonPageComponent),
-  },
-  {
-    path: 'ecosistema',
-    loadComponent: () => import('./features/ecosystem/pages/ecosystem-page/ecosystem-page.component').then(m => m.EcosystemPageComponent),
   },
   {
     path: 'simus/:section',
@@ -65,6 +57,12 @@ export const routes: Routes = [
     path: 'simus',
     loadComponent: () => import('./features/simus/pages/simus-home-page/simus-home-page.component').then(m => m.SimusHomePageComponent),
   },
+  // Rutas antiguas de "Ecosistema" (ahora integrado dentro de SIMUS): se conservan como redirecciones
+  // para no romper enlaces o marcadores existentes.
+  { path: 'ecosistema/escuelas/:schoolId', redirectTo: 'simus/escuelas/:schoolId' },
+  { path: 'ecosistema/escuelas', redirectTo: 'simus/escuelas', pathMatch: 'full' },
+  { path: 'ecosistema/:module', redirectTo: 'simus/:module' },
+  { path: 'ecosistema', redirectTo: 'simus', pathMatch: 'full' },
   { path: 'mapa/participa', redirectTo: 'colaboradores', pathMatch: 'full' },
   {
     path: 'estrategia/circulacion',

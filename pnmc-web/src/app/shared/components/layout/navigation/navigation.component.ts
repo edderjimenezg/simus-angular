@@ -56,7 +56,7 @@ export class NavigationComponent {
   });
 
   isDropdownLink(linkId: string): boolean {
-    return ['ejes', PAGE_IDS.ecosistema, PAGE_IDS.simus].includes(linkId);
+    return ['ejes', PAGE_IDS.simus].includes(linkId);
   }
 
   // Sección expandida dentro del menú móvil (acordeón de submenús)
@@ -74,14 +74,8 @@ export class NavigationComponent {
         action: () => this.onNavigateToPageSection('ejes', group.sectionId),
       }));
     }
-    if (linkId === PAGE_IDS.ecosistema) {
-      return this.ecosystemMenuItems.map((item) => ({
-        label: item.label,
-        action: () => this.onNavigateToPath(item.page),
-      }));
-    }
     if (linkId === PAGE_IDS.simus) {
-      return this.simusMenuItems.map((item) => ({
+      return [...this.ecosystemMenuItems, ...this.simusMenuItems].map((item) => ({
         label: item.label,
         action: () => this.onNavigateToPath(item.page),
       }));
@@ -119,30 +113,57 @@ export class NavigationComponent {
   }
 
   ecosystemMenuItems = [
-    { label: 'Escuelas de música', page: 'ecosistema/escuelas', detail: 'Formación musical, cobertura e indicadores.' },
-    { label: 'Agrupaciones', page: 'ecosistema/agrupaciones', detail: 'Procesos colectivos y prácticas musicales.' },
-    { label: 'Agentes', page: 'ecosistema/agentes', detail: 'Personas y organizaciones del sector.' },
-    { label: 'Escenarios', page: 'ecosistema/escenarios', detail: 'Infraestructura para la música.' },
-    { label: 'Festivales', page: 'ecosistema/festivales', detail: 'Circulación y celebración territorial.' },
-    { label: 'Mercados musicales', page: 'ecosistema/mercados-musicales', detail: 'Nodos de intercambio y circulación.' },
-    { label: 'Redes y documentación', page: 'ecosistema/redes-documentacion', detail: 'Memoria, investigación y archivos.' },
-    { label: 'Lutería', page: 'ecosistema/luteria', detail: 'Saberes, oficios e instrumentos.' },
+    { label: 'Escuelas de música', page: 'simus/escuelas', detail: 'Formación musical, cobertura e indicadores.' },
+    { label: 'Agrupaciones', page: 'simus/agrupaciones', detail: 'Procesos colectivos y prácticas musicales.' },
+    { label: 'Agentes', page: 'simus/agentes', detail: 'Personas y organizaciones del sector.' },
+    { label: 'Escenarios', page: 'simus/escenarios', detail: 'Infraestructura para la música.' },
+    { label: 'Festivales', page: 'simus/festivales', detail: 'Circulación y celebración territorial.' },
+    { label: 'Mercados musicales', page: 'simus/mercados-musicales', detail: 'Nodos de intercambio y circulación.' },
+    { label: 'Redes y documentación', page: 'simus/redes-documentacion', detail: 'Memoria, investigación y archivos.' },
+    { label: 'Lutería', page: 'simus/luteria', detail: 'Saberes, oficios e instrumentos.' },
   ];
 
   simusMenuItems = [
     { label: 'Acerca de SIMUS', page: 'simus/acerca-de', detail: 'Propósito y funcionamiento del sistema.' },
     { label: 'Ayuda y tutoriales', page: 'simus/ayuda', detail: 'Orientación para consultar y participar.' },
     { label: 'Ingresar', page: 'simus/ingresar', detail: 'Acceso a los espacios de gestión de información.' },
-    { label: 'Registrar o actualizar', page: 'simus/participa', detail: 'Mantén actualizada la información territorial.' },
+    { label: 'Ser parte del SIMUS', page: 'simus/participa', detail: 'Registra o actualiza tu proceso, organización o infraestructura.' },
   ];
+
+  // Categorías del menú de SIMUS, mismo patrón de columna fija + panel que el menú de Ejes
+  simusCategories = [
+    { id: 'ecosistema', name: 'Ecosistema musical', items: this.ecosystemMenuItems },
+    { id: 'institucional', name: 'Gestión institucional', items: this.simusMenuItems },
+  ];
+
+  private _activeSimusCategoryId = signal<string | null>(null);
+  activeSimusCategoryId = computed(() => this._activeSimusCategoryId());
+
+  hoveredSimusCategory = computed(() => {
+    const hoveredId = this._activeSimusCategoryId();
+    if (!hoveredId) return null;
+    return this.simusCategories.find((c) => c.id === hoveredId) || null;
+  });
+
+  setActiveSimusCategoryId(id: string | null): void {
+    this._activeSimusCategoryId.set(id);
+  }
+
+  clearSimusCategoryHover(): void {
+    this._activeSimusCategoryId.set(null);
+  }
+
+  getSimusCategoryClass(categoryId: string): string {
+    const isHovered = this._activeSimusCategoryId() === categoryId;
+    return isHovered
+      ? 'border-[#00DA5E] bg-slate-50/70'
+      : 'border-transparent hover:bg-slate-50/40';
+  }
 
   // Mapeo dinámico de ejes para la barra de navegación con traducción del CMS
   ejeNavigationGroups = computed(() => {
     return ejesDataGlobal.map((group, idx) => {
-      const dbTitle = this.webTexts.getWebText(`eje0${idx + 1}_title`);
-      const name = dbTitle
-        ? (dbTitle.length > 25 ? dbTitle.slice(0, 22) + '...' : dbTitle)
-        : group.title;
+      const name = this.webTexts.getWebText(`eje0${idx + 1}_title`) || group.title;
 
       return {
         id: group.id,
@@ -156,12 +177,16 @@ export class NavigationComponent {
     });
   });
 
-  // Eje activo actualmente en la previsualización del menú
-  activeEjeGroup = computed(() => {
-    const groups = this.ejeNavigationGroups();
-    const currentId = this.activeEjeMenuId() || groups[0]?.id || null;
-    return groups.find((g) => g.id === currentId) || groups[0];
+  // Eje sobre el que está el cursor en el menú (null = ninguno, no se muestran componentes)
+  hoveredEjeGroup = computed(() => {
+    const hoveredId = this.activeEjeMenuId();
+    if (!hoveredId) return null;
+    return this.ejeNavigationGroups().find((g) => g.id === hoveredId) || null;
   });
+
+  clearEjeMenuHover(): void {
+    this.setActiveEjeMenuId(null);
+  }
 
   isEjesRelatedPage = computed(() => {
     const page = this.activePage();
@@ -172,7 +197,6 @@ export class NavigationComponent {
     if (linkId === 'ejes') {
       return this.isEjesRelatedPage();
     }
-    if (linkId === PAGE_IDS.ecosistema) return this.activePage() === PAGE_IDS.ecosistema;
     return this.activePage() === linkId;
   }
 
@@ -189,21 +213,21 @@ export class NavigationComponent {
   }
 
   getEjeGroupClass(groupId: string): string {
-    const isActive = this.activeEjeGroup().id === groupId;
-    return isActive 
-      ? 'bg-[#00DA5E] text-[#291242] shadow-sm' 
-      : 'text-slate-500 hover:bg-white hover:text-[#291242] hover:shadow-sm';
+    const isHovered = this.activeEjeMenuId() === groupId;
+    return isHovered
+      ? 'border-[#00DA5E] bg-slate-50/70'
+      : 'border-transparent hover:bg-slate-50/40';
   }
 
   getFeaturedLinkClass(linkId: string): string {
     const active = this.isActiveLink(linkId);
-    if (linkId === 'mapa') {
-      return active 
-        ? 'bg-[#8BF784] text-[#291242]' 
+    if (linkId === 'simus') {
+      return active
+        ? 'bg-[#8BF784] text-[#291242]'
         : 'bg-[#00DA5E] text-[#291242] hover:bg-[#8BF784]';
     } else {
-      return active 
-        ? 'bg-white text-[#291242]' 
+      return active
+        ? 'bg-white text-[#291242]'
         : 'border border-white/25 bg-white/10 text-white hover:border-white/40 hover:bg-white/20';
     }
   }

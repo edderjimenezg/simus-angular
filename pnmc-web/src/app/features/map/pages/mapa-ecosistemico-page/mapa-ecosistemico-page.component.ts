@@ -186,7 +186,7 @@ export class MapaEcosistemicoPageComponent implements OnInit, OnDestroy, AfterVi
     { id: MAP_PANEL_IDS.layers, label: 'Capas', iconClass: 'layers-3' },
     { id: MAP_PANEL_IDS.filters, label: 'Filtros', iconClass: 'filter' },
     { id: MAP_PANEL_IDS.insights, label: 'Modos', iconClass: 'eye' },
-    { id: MAP_PANEL_IDS.registration, label: 'Registrar', iconClass: 'plus' },
+    { id: MAP_PANEL_IDS.registration, label: 'Ser parte del SIMUS', iconClass: 'plus' },
     { id: MAP_PANEL_IDS.export, label: 'Exportar', iconClass: 'download' },
     { id: MAP_PANEL_IDS.tutorial, label: 'Ayuda', iconClass: 'circle-help' },
   ];

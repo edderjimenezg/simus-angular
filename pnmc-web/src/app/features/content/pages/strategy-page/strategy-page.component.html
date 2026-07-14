@@ -1,0 +1,35 @@
+<section class="relative min-h-[78vh] overflow-hidden bg-[#291242] text-white">
+  <img [src]="strategy().image" [alt]="strategy().title" class="absolute inset-0 h-full w-full object-cover opacity-30" />
+  <div class="absolute inset-0 bg-gradient-to-r from-[#291242] via-[#291242]/90 to-transparent"></div>
+  <div class="relative mx-auto flex min-h-[78vh] max-w-7xl items-center px-6 pb-20 pt-40">
+    <div class="max-w-3xl">
+      <nav aria-label="Ruta de navegación" class="mb-6">
+        <ol class="flex items-center gap-2 font-alternate text-[0.66rem] font-bold uppercase tracking-widest">
+          <li>
+            <button
+              type="button"
+              (click)="navigation.navigate('home')"
+              class="cursor-pointer rounded-sm border-0 bg-transparent p-0 uppercase text-[#00DA5E]/75 transition-colors hover:text-[#8BF784] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]"
+            >Inicio</button>
+          </li>
+          <li class="text-[#00DA5E]/35" aria-hidden="true">/</li>
+          <li class="max-w-[16rem] truncate text-[#00DA5E]" aria-current="page">{{ strategy().title }}</li>
+        </ol>
+      </nav>
+      <p class="text-xs font-black uppercase tracking-[0.3em] text-[#00DA5E]">{{ strategy().eyebrow }}</p>
+      <h1 class="mt-5 font-alternate text-5xl font-black uppercase leading-none md:text-8xl">{{ strategy().title }}</h1>
+      <p class="mt-8 max-w-2xl font-nunito text-xl leading-relaxed text-white/75">{{ strategy().description }}</p>
+      <button type="button" (click)="navigation.navigate(mapPage)" class="mt-9 rounded-full bg-[#00DA5E] px-7 py-3 text-xs font-black uppercase tracking-wider text-[#291242]">Explorar mapa ecosistémico</button>
+    </div>
+  </div>
+</section>
+<section class="py-24">
+  <div class="mx-auto max-w-6xl px-6">
+    <p class="mx-auto max-w-4xl text-center font-nunito text-xl leading-9 text-slate-600">{{ strategy().text }}</p>
+    <div class="mt-14 grid gap-5 md:grid-cols-3">
+      @for (pillar of strategy().pillars; track pillar; let index = $index) {
+        <article class="rounded-3xl border border-slate-200 p-8"><span class="text-5xl font-black text-[#00DA5E]">0{{ index + 1 }}</span><h2 class="mt-5 font-alternate text-2xl font-black uppercase text-[#291242]">{{ pillar }}</h2></article>
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,999 @@
+<div class="relative h-screen w-screen select-none overflow-hidden bg-slate-50 pt-20 text-left font-sans text-slate-900">
+  <div class="relative flex h-[calc(100vh-5rem)] w-full overflow-hidden">
+    
+    <!-- MAIN WORKSPACE -->
+    <main class="relative h-full flex-1 bg-slate-100/40" id="mapa-workspace">
+      
+      @if (isLoading()) {
+        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 text-[#291242]">
+          <svg lucideLoader2 class="animate-spin" size="32"></svg>
+          <span class="text-[0.6rem] uppercase tracking-widest font-bold">Preparando cartografía de Colombia...</span>
+        </div>
+      } @else if (geoData() && paddedColombiaBounds()) {
+        <div
+          [class]="'h-full w-full transition-all duration-500 ' + (
+            isTutorialOpen()
+              ? ((tutorialStep() === 3 || tutorialStep() === 4 || tutorialStep() === 5) ? '' : 'filter blur-[3.5px] opacity-65 pointer-events-none')
+              : ''
+          )"
+        >
+          <!-- Raw Leaflet container binded in TS -->
+          <div #mapContainer class="map-edge-canvas h-full w-full" style="z-index: 1;"></div>
+        </div>
+      } @else {
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500">No fue posible cargar la cartografía.</p>
+            @if (mapError()) {
+              <p class="mt-3 text-sm text-slate-500">{{ mapError() }}</p>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- DEPARTMENT QUICK HOVER PANEL -->
+      <section 
+        [class]="'pointer-events-none absolute left-6 top-6 z-[401] w-[340px] rounded-2xl border bg-white/95 px-4 py-3 shadow-md backdrop-blur-md animate-in fade-in duration-200 transition-all duration-500 ' + (
+          isTutorialOpen() ? 'filter blur-[3.5px] opacity-45 pointer-events-none ' : ''
+        ) + (
+          hoveredDepartmentCard() ? 'border-slate-200/80 border-solid' : 'border-dashed border-slate-300'
+        )"
+      >
+        @if (hoveredDepartmentCard(); as card) {
+          <div class="flex items-start gap-2">
+            <svg lucideMapPin size="15" class="mt-0.5 flex-shrink-0 text-[#291242]"></svg>
+            <div class="min-w-0">
+              <p class="truncate text-[12px] font-extrabold uppercase text-[#291242]">{{ card.deptName }}</p>
+              <p class="mt-1 text-[11px] leading-relaxed text-slate-500">
+                {{ formatMetric(card.stats.totalRecords) }} registros · {{ formatMetric(card.stats.schoolCount) }} escuelas · {{ formatMetric(card.stats.festivalCount) }} festivales · {{ formatMetric(card.stats.marketCount) }} mercados
+              </p>
+            </div>
+          </div>
+        } @else {
+          <div class="flex items-start gap-2">
+            <svg lucideInfo size="15" class="mt-0.5 flex-shrink-0 text-slate-400"></svg>
+            <p class="text-[11px] leading-relaxed text-slate-500">
+              Pasa el cursor sobre un departamento para ver su ficha técnica rápida. Haz clic para fijar el análisis en este panel.
+            </p>
+          </div>
+        }
+      </section>
+
+      <!-- COLOR LEGEND PANEL -->
+      <section 
+        [class]="'pointer-events-auto absolute bottom-6 left-6 z-[401] w-[240px] rounded-2xl border border-slate-200/80 bg-white/95 p-3 shadow-md backdrop-blur-md transition-all duration-500 ' + (
+          isTutorialOpen() ? 'filter blur-[3.5px] opacity-45 pointer-events-none' : ''
+        )"
+      >
+        <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Leyenda de Colores</p>
+        <div class="mt-2 max-h-[175px] overflow-y-auto pr-1 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-300">
+          @if (visualizationMode() === 'practicas_territorios') {
+            @for (item of activeLegendItems(); track item.label) {
+              <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full flex-shrink-0 border border-slate-300" [style.background-color]="item.color"></span>
+                <span class="text-[9px] font-semibold uppercase tracking-wider text-slate-600 truncate" [title]="item.label">{{ item.label }}</span>
+              </div>
+            }
+            <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+              <span class="h-2.5 w-2.5 rounded bg-[#e2e8f0]/40 border border-slate-200"></span>
+              <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Fuera de influencia</span>
+            </div>
+          } @else {
+            <!-- Reverse array in html by using manual iteration or pre-reversing in signal -->
+            @for (item of activeLegendItems(); track item.label) {
+              <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded" [style.background-color]="item.color"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">{{ item.label }}</span>
+              </div>
+            }
+            <div class="flex items-center gap-2">
+              <span class="h-2.5 w-2.5 rounded bg-[#1f1633]"></span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Sin cobertura</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- FLOATING TOOLBAR -->
+      <div class="absolute right-6 top-6 z-[1200] flex flex-col gap-2">
+        <div class="rounded-3xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur-sm">
+          <div class="flex flex-col gap-1.5">
+            @for (item of TOOLBAR_ITEMS; track item.id) {
+              @let isActive = activePanel() === item.id;
+              @let isRegistration = item.id === MAP_PANEL_IDS_REF.registration;
+              
+              <button
+                type="button"
+                (click)="handleTogglePanel(item.id)"
+                [class]="'group relative flex h-11 w-11 items-center justify-center rounded-xl border transition-all cursor-pointer ' + (
+                  isActive
+                    ? 'border-[#291242] bg-[#291242] text-white shadow-md'
+                    : isRegistration
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-600 hover:border-emerald-300 hover:bg-emerald-100 hover:text-emerald-700 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                    : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#291242]'
+                )"
+                [title]="item.label"
+                [attr.aria-label]="item.label"
+              >
+                <!-- Render icon conditionally based on id -->
+                @if (item.id === MAP_PANEL_IDS_REF.layers) {
+                  <svg lucideLayers3 size="17"></svg>
+                } @else if (item.id === MAP_PANEL_IDS_REF.filters) {
+                  <svg lucideFilter size="17"></svg>
+                } @else if (item.id === MAP_PANEL_IDS_REF.insights) {
+                  <svg lucideEye size="17"></svg>
+                } @else if (item.id === MAP_PANEL_IDS_REF.registration) {
+                  <svg lucidePlus size="17"></svg>
+                } @else if (item.id === MAP_PANEL_IDS_REF.export) {
+                  <svg lucideDownload size="17"></svg>
+                } @else if (item.id === MAP_PANEL_IDS_REF.tutorial) {
+                  <svg lucideCircleHelp size="17"></svg>
+                }
+
+                @if (isRegistration && !isActive) {
+                  <span class="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
+                    <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                  </span>
+                }
+
+                <span class="pointer-events-none absolute right-[calc(100%+10px)] hidden whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-[0.52rem] font-bold uppercase tracking-[0.12em] text-slate-500 shadow-sm group-hover:block">
+                  {{ item.label }}
+                </span>
+              </button>
+            }
+
+            <button
+              type="button"
+              (click)="printMap()"
+              class="group relative flex h-11 w-11 items-center justify-center rounded-xl border border-transparent bg-white text-slate-600 transition-all hover:border-slate-200 hover:bg-slate-50 hover:text-[#291242] cursor-pointer"
+              title="Imprimir"
+              aria-label="Imprimir"
+            >
+              <svg lucidePrinter size="17"></svg>
+              <span class="pointer-events-none absolute right-[calc(100%+10px)] hidden whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2 py-1 text-[0.52rem] font-bold uppercase tracking-[0.12em] text-slate-500 shadow-sm group-hover:block">
+                Imprimir
+              </span>
+            </button>
+          </div>
+        </div>
+
+        @if (activePanel()) {
+          <button
+            type="button"
+            (click)="activePanel.set(null)"
+            class="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-500 shadow-md backdrop-blur-sm hover:text-[#291242] cursor-pointer"
+            title="Cerrar panel"
+            aria-label="Cerrar panel"
+          >
+            <svg lucideX size="14"></svg>
+          </button>
+        }
+      </div>
+
+      <!-- OVERLAY PANELS -->
+      
+      <!-- Capas Panel -->
+      @if (activePanel() === MAP_PANEL_IDS_REF.layers) {
+        <section class="animate-in fade-in slide-in-from-right-4 duration-200 absolute right-[86px] top-6 z-[1190] w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_52px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+          <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+              <p class="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-slate-400">Geovisor</p>
+              <h3 class="mt-2 font-alternate text-[0.98rem] font-bold uppercase leading-none text-[#291242]">Capas</h3>
+              <p class="mt-1.5 text-[0.62rem] leading-relaxed text-slate-500">Activa una dimensión del ecosistema para enfocar la lectura del mapa.</p>
+            </div>
+            <button
+              type="button"
+              (click)="activePanel.set(null)"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#291242] cursor-pointer"
+              aria-label="Cerrar panel"
+            >
+              <svg lucideX size="14"></svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(100vh-180px)] overflow-y-auto px-5 py-4 custom-scrollbar space-y-2">
+            @for (layer of MAP_LAYERS_CONFIG_REF; track layer.id) {
+              <button
+                type="button"
+                (click)="activeCategory.set(layer.layerKey)"
+                [class]="'w-full rounded-xl border px-3 py-3 text-left transition-all cursor-pointer ' + (
+                  activeCategory() === layer.layerKey
+                    ? 'border-[#291242] bg-[#291242] text-white'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                )"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-[10px] font-bold uppercase tracking-widest">{{ layer.label }}</p>
+                  <span class="h-2.5 w-2.5 rounded-full" [style.background-color]="layer.color"></span>
+                </div>
+                <p [class]="'mt-1.5 text-[11px] leading-relaxed ' + (activeCategory() === layer.layerKey ? 'text-slate-200' : 'text-slate-500')">
+                  {{ layer.description }}
+                </p>
+              </button>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Filtros Panel -->
+      @if (activePanel() === MAP_PANEL_IDS_REF.filters) {
+        <section class="animate-in fade-in slide-in-from-right-4 duration-200 absolute right-[86px] top-6 z-[1190] w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_52px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+          <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+              <p class="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-slate-400">Geovisor</p>
+              <h3 class="mt-2 font-alternate text-[0.98rem] font-bold uppercase leading-none text-[#291242]">Filtros</h3>
+              <p class="mt-1.5 text-[0.62rem] leading-relaxed text-slate-500">Refina la lectura territorial.</p>
+            </div>
+            <button
+              type="button"
+              (click)="activePanel.set(null)"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#291242] cursor-pointer"
+              aria-label="Cerrar panel"
+            >
+              <svg lucideX size="14"></svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(100vh-180px)] overflow-y-auto px-5 py-4 custom-scrollbar space-y-4">
+            <label class="block">
+              <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Departamento</span>
+              <select
+                [ngModel]="selectedDept()"
+                (ngModelChange)="selectedDept.set($event)"
+                class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase text-[#291242] outline-none focus:border-[#291242] cursor-pointer"
+              >
+                @for (department of departmentsList(); track department) {
+                  <option [value]="department">{{ department }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Territorio Sonoro</span>
+              <select
+                [ngModel]="selectedSonorousTerritory()"
+                (ngModelChange)="selectedSonorousTerritory.set($event)"
+                class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase text-[#291242] outline-none focus:border-[#291242] cursor-pointer"
+              >
+                <option value="Todos">Todos</option>
+                @for (opt of TERRITORIOS_SONOROS_LIST; track opt) {
+                  <option [value]="opt">{{ opt }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="block">
+              <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Práctica / Género</span>
+              <select
+                [ngModel]="selectedPractice()"
+                (ngModelChange)="selectedPractice.set($event)"
+                class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase text-[#291242] outline-none focus:border-[#291242] cursor-pointer"
+              >
+                <option value="Todas">Todas</option>
+                @for (opt of PRACTICAS_MUSICALES_LIST; track opt) {
+                  <option [value]="opt">{{ opt }}</option>
+                }
+              </select>
+            </label>
+
+            <button
+              type="button"
+              (click)="handleReturnToNationalView()"
+              class="flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-[#291242] cursor-pointer"
+            >
+              <svg lucideRotateCcw size="14"></svg>
+              Vista nacional
+            </button>
+          </div>
+        </section>
+      }
+
+      <!-- Modos Panel -->
+      @if (activePanel() === MAP_PANEL_IDS_REF.insights) {
+        <section class="animate-in fade-in slide-in-from-right-4 duration-200 absolute right-[86px] top-6 z-[1190] w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_52px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+          <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+              <p class="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-slate-400">Geovisor</p>
+              <h3 class="mt-2 font-alternate text-[0.98rem] font-bold uppercase leading-none text-[#291242]">Modos</h3>
+              <p class="mt-1.5 text-[0.62rem] leading-relaxed text-slate-500">Elige cómo deseas proyectar la cartografía del ecosistema.</p>
+            </div>
+            <button
+              type="button"
+              (click)="activePanel.set(null)"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#291242] cursor-pointer"
+              aria-label="Cerrar panel"
+            >
+              <svg lucideX size="14"></svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(100vh-180px)] overflow-y-auto px-5 py-4 custom-scrollbar space-y-4">
+            <div class="space-y-2">
+              <button
+                type="button"
+                (click)="visualizationMode.set('cobertura')"
+                [class]="'w-full rounded-xl border px-3 py-3 text-left transition-all cursor-pointer ' + (
+                  visualizationMode() === 'cobertura'
+                    ? 'border-[#291242] bg-[#291242] text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                )"
+              >
+                <p class="text-[10px] font-bold uppercase tracking-widest">Modo Cobertura (Densidad)</p>
+                <p [class]="'mt-1.5 text-[11px] leading-relaxed ' + (visualizationMode() === 'cobertura' ? 'text-slate-200' : 'text-slate-500')">
+                  Muestra la distribución de procesos mediante un degradado coroplético tradicional.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                (click)="visualizationMode.set('practicas_territorios'); selectedSonorousTerritory.set('Todos'); selectedPractice.set('Todas');"
+                [class]="'w-full rounded-xl border px-3 py-3 text-left transition-all cursor-pointer ' + (
+                  visualizationMode() === 'practicas_territorios'
+                    ? 'border-[#291242] bg-[#291242] text-white shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                )"
+              >
+                <p class="text-[10px] font-bold uppercase tracking-widest">Modo de Prácticas e Influencia</p>
+                <p [class]="'mt-1.5 text-[11px] leading-relaxed ' + (visualizationMode() === 'practicas_territorios' ? 'text-slate-200' : 'text-slate-500')">
+                  Proyecta regiones específicas de influencia y saberes a través de manchas de color.
+                </p>
+              </button>
+            </div>
+
+            @if (visualizationMode() === 'practicas_territorios') {
+              <div class="rounded-2xl border border-slate-100 bg-slate-50/50 p-3.5 space-y-4 animate-in fade-in duration-200">
+                <div class="flex rounded-xl bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    (click)="activeThematicOption.set('territorio')"
+                    [class]="'flex-1 rounded-lg py-1.5 text-center text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ' + (
+                      activeThematicOption() === 'territorio'
+                        ? 'bg-white text-[#291242] shadow-sm'
+                        : 'text-slate-500 hover:text-[#291242]'
+                    )"
+                  >
+                    Territorio Sonoro
+                  </button>
+                  <button
+                    type="button"
+                    (click)="activeThematicOption.set('practica')"
+                    [class]="'flex-1 rounded-lg py-1.5 text-center text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ' + (
+                      activeThematicOption() === 'practica'
+                        ? 'bg-white text-[#291242] shadow-sm'
+                        : 'text-slate-500 hover:text-[#291242]'
+                    )"
+                  >
+                    Práctica / Género
+                  </button>
+                </div>
+
+                <div class="space-y-1">
+                  <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Tipo de Visualización</span>
+                  <div class="flex rounded-xl bg-slate-200/60 p-1 mt-1">
+                    <button
+                      type="button"
+                      (click)="influenceDisplayType.set('puntos')"
+                      [class]="'flex-1 rounded-lg py-1.5 text-center text-[8.5px] font-bold uppercase tracking-wider transition-all cursor-pointer ' + (
+                        influenceDisplayType() === 'puntos'
+                          ? 'bg-white text-[#291242] shadow-sm'
+                          : 'text-slate-500 hover:text-[#291242]'
+                      )"
+                    >
+                      Puntos y Zonas
+                    </button>
+                    <button
+                      type="button"
+                      (click)="influenceDisplayType.set('calor')"
+                      [class]="'flex-1 rounded-lg py-1.5 text-center text-[8.5px] font-bold uppercase tracking-wider transition-all cursor-pointer ' + (
+                        influenceDisplayType() === 'calor'
+                          ? 'bg-white text-[#291242] shadow-sm'
+                          : 'text-slate-500 hover:text-[#291242]'
+                      )"
+                    >
+                      Mapa de Calor
+                    </button>
+                  </div>
+                </div>
+
+                @if (activeThematicOption() === 'territorio') {
+                  <label class="block">
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Seleccionar Territorio</span>
+                    <select
+                      [ngModel]="selectedSonorousTerritory()"
+                      (ngModelChange)="selectedSonorousTerritory.set($event)"
+                      class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase text-[#291242] outline-none focus:border-[#291242] cursor-pointer"
+                    >
+                      <option value="Todos">Ver Todos los Territorios</option>
+                      @for (opt of TERRITORIOS_SONOROS_LIST; track opt) {
+                        <option [value]="opt">{{ opt }}</option>
+                      }
+                    </select>
+                  </label>
+                } @else {
+                  <label class="block">
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Seleccionar Práctica</span>
+                    <select
+                      [ngModel]="selectedPractice()"
+                      (ngModelChange)="selectedPractice.set($event)"
+                      class="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-[11px] font-bold uppercase text-[#291242] outline-none focus:border-[#291242] cursor-pointer"
+                    >
+                      <option value="Todas">Ver Todas las Prácticas</option>
+                      @for (opt of PRACTICAS_MUSICALES_LIST; track opt) {
+                        <option [value]="opt">{{ opt }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Exportar Panel -->
+      @if (activePanel() === MAP_PANEL_IDS_REF.export) {
+        <section class="animate-in fade-in slide-in-from-right-4 duration-200 absolute right-[86px] top-6 z-[1190] w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_52px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+          <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+              <p class="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-slate-400">Geovisor</p>
+              <h3 class="mt-2 font-alternate text-[0.98rem] font-bold uppercase leading-none text-[#291242]">Exportar</h3>
+              <p class="mt-1.5 text-[0.62rem] leading-relaxed text-slate-500">Acciones rápidas para reporte.</p>
+            </div>
+            <button
+              type="button"
+              (click)="activePanel.set(null)"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#291242] cursor-pointer"
+              aria-label="Cerrar panel"
+            >
+              <svg lucideX size="14"></svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(100vh-180px)] overflow-y-auto px-5 py-4 custom-scrollbar space-y-2">
+            <button
+              type="button"
+              (click)="handleExportLayerCsv()"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#291242] px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-[#3b1a5c] cursor-pointer"
+            >
+              <svg lucideFileDown size="14"></svg>
+              Exportar CSV
+            </button>
+            <button
+              type="button"
+              (click)="printMap()"
+              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-slate-600 hover:text-[#291242] cursor-pointer"
+            >
+              Imprimir visualización
+            </button>
+          </div>
+        </section>
+      }
+
+      <!-- Registrar Panel -->
+      @if (activePanel() === MAP_PANEL_IDS_REF.registration) {
+        <section class="animate-in fade-in slide-in-from-right-4 duration-200 absolute right-[86px] top-6 z-[1190] w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_22px_52px_rgba(15,23,42,0.18)] backdrop-blur-sm">
+          <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+            <div>
+              <p class="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-slate-400">Geovisor</p>
+              <h3 class="mt-2 font-alternate text-[0.98rem] font-bold uppercase leading-none text-[#291242]">Registrar</h3>
+              <p class="mt-1.5 text-[0.62rem] leading-relaxed text-slate-500">Participa en el mapeo interactivo.</p>
+            </div>
+            <button
+              type="button"
+              (click)="activePanel.set(null)"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-[#291242] cursor-pointer"
+              aria-label="Cerrar panel"
+            >
+              <svg lucideX size="14"></svg>
+            </button>
+          </header>
+          <div class="max-h-[calc(100vh-180px)] overflow-y-auto px-5 py-4 custom-scrollbar space-y-4 text-left">
+            <div class="flex items-center justify-center rounded-2xl bg-emerald-50 p-6 text-emerald-600 border border-emerald-100 shadow-[0_0_15px_rgba(16,185,129,0.06)] animate-in zoom-in duration-300">
+              <svg lucideMail size="32" class="animate-pulse"></svg>
+            </div>
+            <div class="space-y-2">
+              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">¿Cómo funciona?</p>
+              <p class="text-[11px] leading-relaxed text-slate-500">
+                El Plan Nacional de Música para la Convivencia (PNMC) invita a todos los agentes musicales del país (festivales, escuelas de música, mercados, redes y lutieres) a ser visibles.
+              </p>
+              <p class="text-[11px] leading-relaxed text-slate-500">
+                Inscribe tu proceso en el sistema oficial para enriquecer este mapeo ecosistémico y fortalecer la circulación y gobernanza musical.
+              </p>
+            </div>
+            
+            <button
+              type="button"
+              (click)="onOpenParticipation()"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-white transition hover:bg-emerald-700 shadow-md focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 cursor-pointer"
+            >
+              Registrar procesos
+              <svg lucideArrowRight size="14"></svg>
+            </button>
+          </div>
+        </section>
+      }
+
+      <!-- TUTORIAL DIALOG -->
+      @if (isTutorialOpen()) {
+        <div
+          [class]="tutorialStep() === 0
+            ? 'fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/40 backdrop-blur-[1.5px] animate-in fade-in duration-300 pointer-events-auto'
+            : 'fixed inset-x-0 bottom-10 z-[9999] flex items-center justify-center pointer-events-none animate-in slide-in-from-bottom-5 duration-300'"
+        >
+          <div
+            appFocusTrap
+            role="dialog"
+            aria-modal="true"
+            aria-label="Tutorial del geovisor ecosistémico"
+            [class]="tutorialStep() === 0
+              ? 'relative w-[380px] rounded-3xl border border-slate-100 bg-white/95 p-6 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-300 pointer-events-auto'
+              : 'relative w-[440px] rounded-3xl border border-slate-200 bg-white/95 p-5 shadow-2xl backdrop-blur-md pointer-events-auto'"
+          >
+            
+            <!-- Step Header -->
+            <div class="flex items-center justify-between">
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                Tutorial · Paso {{ tutorialStep() + 1 }} de {{ TUTORIAL_STEPS.length }}
+              </span>
+              <button
+                type="button"
+                (click)="handleCloseTutorial()"
+                aria-label="Cerrar tutorial"
+                class="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <svg lucideX size="14"></svg>
+              </button>
+            </div>
+
+            <!-- Dynamic Content -->
+            <div class="mt-5 space-y-3">
+              <div class="flex items-center gap-3">
+                <div class="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#291242]/5 text-[#291242]">
+                  <!-- Render step icon conditionally -->
+                  @if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'Globe') {
+                    <svg lucideGlobe size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'Layers3') {
+                    <svg lucideLayers3 size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'Filter') {
+                    <svg lucideFilter size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'BarChart3') {
+                    <svg lucideBarChart3 size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'MapPin') {
+                    <svg lucideMapPin size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'Eye') {
+                    <svg lucideEye size="18"></svg>
+                  } @else if (TUTORIAL_STEPS[tutorialStep()].iconClass === 'CircleHelp') {
+                    <svg lucideCircleHelp size="18"></svg>
+                  }
+                </div>
+                <h3 class="text-sm font-extrabold uppercase tracking-wide text-[#291242]">
+                  {{ TUTORIAL_STEPS[tutorialStep()].title }}
+                </h3>
+              </div>
+              <p class="text-[11.5px] leading-relaxed text-slate-600">
+                {{ tutorialStep() === 0 ? getWebText('map_description', TUTORIAL_STEPS[tutorialStep()].description) : TUTORIAL_STEPS[tutorialStep()].description }}
+              </p>
+            </div>
+
+            <!-- Footer Progress Dots & Nav -->
+            <div class="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+              <div class="flex gap-1.5">
+                @for (step of TUTORIAL_STEPS; track $index) {
+                  <span
+                    [class]="'h-1.5 rounded-full transition-all duration-300 ' + (
+                      $index === tutorialStep() ? 'w-4 bg-[#291242]' : 'w-1.5 bg-slate-200'
+                    )"
+                  ></span>
+                }
+              </div>
+
+              <div class="flex gap-2">
+                @if (tutorialStep() > 0) {
+                  <button
+                    type="button"
+                    (click)="handleGoToStep(tutorialStep() - 1)"
+                    class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-600 hover:text-[#291242] transition-colors cursor-pointer"
+                  >
+                    Atrás
+                  </button>
+                }
+                <button
+                  type="button"
+                  (click)="tutorialStep() < TUTORIAL_STEPS.length - 1 ? handleGoToStep(tutorialStep() + 1) : handleCloseTutorial()"
+                  class="rounded-xl bg-[#291242] px-4 py-1.5 text-[9px] font-bold uppercase tracking-wider text-white shadow-md shadow-[#291242]/20 hover:bg-[#3d1b61] transition-all cursor-pointer"
+                >
+                  {{ tutorialStep() < TUTORIAL_STEPS.length - 1 ? 'Siguiente' : 'Finalizar' }}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+    </main>
+
+    <!-- SIDEBAR PANEL -->
+    <aside
+      [class]="'relative z-[1000] flex h-full w-[380px] flex-shrink-0 flex-col border-l border-slate-200 bg-white shadow-xl transition-all duration-500 ' + (
+        isTutorialOpen()
+          ? (tutorialStep() === 6
+              ? 'ring-4 ring-[#291242]/20 z-[9998]'
+              : 'filter blur-[3.5px] opacity-45 pointer-events-none')
+          : ''
+      )"
+    >
+      <header class="flex-shrink-0 border-b border-slate-100 px-5 py-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Territorio activo</p>
+            <h2 class="mt-1 truncate text-xl font-extrabold uppercase leading-tight text-[#291242]">
+              {{ selectedDepartmentDisplayName() }}
+            </h2>
+          </div>
+          @if (selectedDept() !== 'Nacional') {
+            <button
+              type="button"
+              (click)="handleReturnToNationalView()"
+              class="flex h-9 flex-shrink-0 items-center gap-1.5 rounded-xl bg-[#291242] px-3.5 text-[9px] font-extrabold uppercase tracking-widest text-white shadow-md shadow-[#291242]/20 hover:bg-[#3d1b61] active:scale-95 transition-all cursor-pointer"
+            >
+              <svg lucideRotateCcw size="13" class="text-white"></svg>
+              Nacional
+            </button>
+          }
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-slate-200/80 bg-slate-50 px-3 py-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Procesos registrados</p>
+              <p class="mt-1 text-2xl font-extrabold leading-none text-[#291242]">{{ formatMetric(territorialPulse().totalRecords) }}</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">{{ territorialPulse().impactedLabel }}</p>
+              <p class="mt-1 text-2xl font-extrabold leading-none text-[#291242]">{{ formatMetric(territorialPulse().impactedCount) }}</p>
+            </div>
+          </div>
+          <div class="mt-3 border-t border-slate-200/80 pt-3">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Capas territoriales</p>
+            <div class="mt-2 grid grid-cols-3 gap-x-2 gap-y-3">
+              @for (item of territorialPulse().layerItems; track item.key) {
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-2 w-2 rounded-full flex-shrink-0" [style.background-color]="item.color"></span>
+                    <span class="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{{ item.label }}</span>
+                  </div>
+                  <p class="mt-1 text-sm font-extrabold text-[#291242]">{{ formatMetric(item.value) }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-3 rounded-xl bg-slate-100 p-1">
+          @for (tab of [
+            { id: 'resumen', label: 'Resumen' },
+            { id: 'registros', label: 'Recientes' },
+            { id: 'directorio', label: 'Directorio' }
+          ]; track tab.id) {
+            <button
+              type="button"
+              (click)="sidebarTab.set(tab.id)"
+              [class]="'h-9 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ' + (
+                sidebarTab() === tab.id
+                  ? 'bg-white text-[#291242] shadow-sm'
+                  : 'text-slate-500 hover:text-[#291242]'
+              )"
+            >
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto bg-slate-50/50 px-5 py-4 custom-scrollbar">
+        
+        <!-- Tab: RESUMEN -->
+        @if (sidebarTab() === 'resumen') {
+          <div class="space-y-3">
+            @for (card of summaryCards(); track card.label) {
+              <article class="rounded-xl border border-slate-200/80 bg-white px-3 py-3 shadow-sm">
+                <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">{{ card.label }}</p>
+                <p class="mt-1 text-xl font-extrabold leading-none text-[#291242]">{{ formatMetric(card.value) }}</p>
+                @if (card.note) {
+                  <p class="mt-1.5 text-[11px] leading-relaxed text-slate-500">{{ card.note }}</p>
+                }
+              </article>
+            }
+            <article class="rounded-xl border border-slate-200/80 bg-white px-3 py-3 shadow-sm">
+              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Nota de capa</p>
+              <p class="mt-2 text-[12px] leading-relaxed text-slate-600">{{ activeInfoNote() }}</p>
+              <div class="mt-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                <svg lucideDatabase size="13"></svg>
+                {{ schoolLayerReady() && marketLayerReady() ? 'Datos sincronizados' : 'Sincronizando capas' }}
+              </div>
+            </article>
+          </div>
+        }
+
+        <!-- Tab: RECIENTES -->
+        @if (sidebarTab() === 'registros') {
+          @if (selectedDept() === 'Nacional') {
+            <div class="space-y-2">
+              <div class="mb-3 flex items-center gap-2 text-slate-400">
+                <svg lucideSearch size="14"></svg>
+                <p class="text-[9px] font-bold uppercase tracking-widest">Ranking nacional por presencia</p>
+              </div>
+              @for (row of technicalDepartmentRows().slice(0, 14); track row.departmentKey) {
+                @let metricValue = isGeneralLayer()
+                  ? row.totalRecords
+                  : isSchoolsLayer()
+                  ? row.schoolCount
+                  : isMarketsLayer()
+                  ? row.marketCount
+                  : row.festivalCount;
+
+                <button
+                  type="button"
+                  (click)="handleDepartmentDrilldown(row.departmentKey)"
+                  class="flex w-full items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2.5 text-left shadow-sm hover:border-slate-300 cursor-pointer"
+                >
+                  <span class="flex min-w-0 items-center gap-2">
+                    <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-extrabold text-[#291242]">
+                      {{ $index + 1 }}
+                    </span>
+                    <span class="truncate text-[12px] font-bold uppercase text-[#291242]">{{ row.departmentLabel }}</span>
+                  </span>
+                  <span class="text-[12px] font-extrabold text-slate-500">{{ formatMetric(metricValue) }}</span>
+                </button>
+              }
+            </div>
+          } @else {
+            <div class="space-y-2">
+              @if (visibleRecords().length > 0) {
+                @for (record of visibleRecords(); track $index) {
+                  <button
+                    type="button"
+                    (click)="selectedRecordDetail.set(record)"
+                    class="block w-full rounded-xl border border-slate-200/80 bg-white px-3 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#291242]/30 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] cursor-pointer"
+                  >
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">{{ record.type }}</p>
+                    <h4 class="mt-1 text-[12px] font-bold leading-snug text-[#291242]">{{ record.name || 'Sin nombre visible' }}</h4>
+                    @if (record.meta) {
+                      <p class="mt-1 text-[11px] leading-relaxed text-slate-500">{{ record.meta }}</p>
+                    }
+                    <p class="mt-2 text-[9px] font-bold uppercase tracking-widest text-slate-400">Ver detalle</p>
+                  </button>
+                }
+              } @else {
+                <div class="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
+                  <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Sin registros locales visibles</p>
+                </div>
+              }
+            </div>
+          }
+        }
+
+        <!-- Tab: DIRECTORIO -->
+        @if (sidebarTab() === 'directorio') {
+          <div class="space-y-4">
+            
+            <!-- Category Selector Pills -->
+            <div class="flex gap-2 overflow-x-auto pb-2.5 thin-horizontal-scrollbar">
+              @for (pill of [
+                { id: 'Todos', label: 'Todos', color: '#059669', bgActive: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' },
+                { id: 'Festivales', label: 'Festivales', color: '#9333ea', bgActive: 'bg-purple-50 text-purple-700 ring-purple-600/20' },
+                { id: 'Escuelas', label: 'Escuelas', color: '#0284c7', bgActive: 'bg-sky-50 text-sky-700 ring-sky-600/20' },
+                { id: 'Mercados', label: 'Mercados', color: '#d97706', bgActive: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
+                { id: 'Redes', label: 'Redes Doc.', color: '#db2777', bgActive: 'bg-pink-50 text-pink-700 ring-pink-600/20' },
+                { id: 'Lutieres', label: 'Lutieres', color: '#0d9488', bgActive: 'bg-teal-50 text-teal-700 ring-teal-600/20' }
+              ]; track pill.id) {
+                @let isActive = directoryCategory() === pill.id;
+                @let count = directoryCounts()[pill.id] || 0;
+                
+                <button
+                  type="button"
+                  (click)="directoryCategory.set(pill.id)"
+                  [class]="'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-wider ring-1 ring-inset transition-all flex-shrink-0 cursor-pointer ' + (
+                    isActive
+                      ? (pill.bgActive + ' shadow-sm')
+                      : 'bg-white text-slate-500 ring-slate-200 hover:text-[#291242] hover:bg-slate-50'
+                  )"
+                >
+                  <span class="h-1.5 w-1.5 rounded-full" [style.background-color]="pill.color"></span>
+                  {{ pill.label }}
+                  <span [class]="'ml-0.5 rounded-md px-1 py-0.5 text-[8px] font-bold ' + (isActive ? 'bg-white/60' : 'bg-slate-100 text-slate-600')">
+                    {{ count }}
+                  </span>
+                </button>
+              }
+            </div>
+
+            <!-- Intelligent Search Bar -->
+            <div class="relative rounded-xl shadow-sm">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                <svg lucideSearch size="13"></svg>
+              </div>
+              <input
+                type="text"
+                [ngModel]="directoryQuery()"
+                (ngModelChange)="directoryQuery.set($event)"
+                [placeholder]="'Buscar en ' + (directoryCategory() === 'Todos' ? 'todo el directorio' : directoryCategory().toLowerCase()) + '...'"
+                class="block w-full rounded-xl border border-slate-200/80 bg-white py-2.5 pl-9 pr-8 text-xs text-[#291242] placeholder-slate-400 focus:border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all font-semibold"
+              />
+              @if (directoryQuery()) {
+                <button
+                  type="button"
+                  (click)="directoryQuery.set('')"
+                  class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <svg lucideX size="13"></svg>
+                </button>
+              }
+            </div>
+
+            <!-- Directory Records List -->
+            <div class="space-y-2">
+              @if (filteredDirectoryRecords().slice(0, directoryLimit()).length > 0) {
+                @for (item of filteredDirectoryRecords().slice(0, directoryLimit()); track $index) {
+                  <button
+                    type="button"
+                    (click)="selectedRecordDetail.set(item)"
+                    class="group relative flex w-full flex-col items-start rounded-2xl border border-slate-200/80 bg-white p-3.5 text-left shadow-sm transition-all duration-300 hover:-translate-y-[1.5px] hover:border-slate-300 hover:shadow-md cursor-pointer"
+                  >
+                    <span class="flex w-full items-center justify-between gap-2">
+                      <span
+                        class="inline-flex items-center rounded px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wider"
+                        [style.background-color]="item.color + '15'"
+                        [style.color]="item.color"
+                      >
+                        {{ item.type }}
+                      </span>
+                      @if (selectedDept() === 'Nacional' && item.department) {
+                        <span class="text-[9px] font-extrabold uppercase tracking-wide text-slate-400">
+                          {{ item.department }}
+                        </span>
+                      }
+                    </span>
+                    <h4 class="mt-2 text-[11px] font-bold text-[#291242] leading-snug group-hover:text-[#4f267a] transition-all">
+                      {{ item.name }}
+                    </h4>
+                    <p class="mt-1 text-[9px] font-semibold text-slate-500 line-clamp-2 leading-relaxed">
+                      {{ item.meta }}
+                    </p>
+                  </button>
+                }
+              } @else {
+                <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center shadow-sm">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Sin registros encontrados</p>
+                  <p class="mt-1 text-[9px] leading-relaxed text-slate-500">Intenta cambiando la categoría o ajustando los términos de búsqueda.</p>
+                </div>
+              }
+            </div>
+
+            <!-- Pagination Load More -->
+            @if (filteredDirectoryRecords().length > directoryLimit()) {
+              <button
+                type="button"
+                (click)="directoryLimit.set(directoryLimit() + 12)"
+                class="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-[9px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-50 hover:text-[#291242] transition-all shadow-sm cursor-pointer"
+              >
+                Ver más registros ({{ filteredDirectoryRecords().length - directoryLimit() }} restantes)
+              </button>
+            }
+          </div>
+        }
+
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- REGISTRATION DETAIL MODAL -->
+  @if (selectedRecordDetail(); as detail) {
+    <div class="fixed inset-0 z-[3200] flex items-center justify-center bg-[#0f172a]/50 p-4 backdrop-blur-sm">
+      <section class="w-[min(92vw,680px)] overflow-hidden rounded-[2.5rem] border border-white/20 bg-white/95 backdrop-blur-xl shadow-2xl">
+        
+        <!-- Header -->
+        <header class="relative overflow-hidden bg-gradient-to-br from-[#291242] to-[#361757] px-8 py-8 text-white">
+          <div class="relative flex items-start justify-between gap-5">
+            <div class="min-w-0 flex-1">
+              <p class="text-[0.52rem] font-bold uppercase tracking-[0.25em] text-[#8BF784]">
+                Detalle de {{ detail.type }}
+              </p>
+              @if (detail.type === 'Festival') {
+                <h3 class="mt-3 font-alternate text-[1.4rem] font-bold uppercase leading-tight text-white tracking-wide">
+                  {{ detail.name || 'Festival sin nombre visible' }}
+                  @let loc = [detail.record?.municipality, detail.record?.department].filter(Boolean).join(', ');
+                  @if (loc) {
+                    ({{ loc }})
+                  }
+                </h3>
+                @if (detail.record?.organizer) {
+                  <p class="mt-2.5 text-[0.82rem] font-semibold text-slate-200">
+                    Organiza: {{ detail.record.organizer }}
+                  </p>
+                }
+                @if (detail.record?.versions) {
+                  <p class="mt-1 text-[0.76rem] font-medium text-slate-300">
+                    {{ detail.record.versions }} ediciones
+                  </p>
+                }
+              } @else {
+                <h3 class="mt-3 font-alternate text-[1.4rem] font-bold uppercase leading-tight text-white tracking-wide">
+                  {{ detail.name || 'Registro sin nombre visible' }}
+                </h3>
+                @if (headerMetadata()) {
+                  <p class="mt-3.5 text-[0.78rem] font-medium leading-relaxed text-slate-300">
+                    {{ headerMetadata() }}
+                  </p>
+                }
+              }
+            </div>
+            <button
+              type="button"
+              (click)="selectedRecordDetail.set(null)"
+              class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/15 transition-all cursor-pointer"
+              aria-label="Cerrar detalle de registro"
+            >
+              <svg lucideX size="16"></svg>
+            </button>
+          </div>
+        </header>
+
+        <!-- Body -->
+        <div class="max-h-[min(68vh,620px)] overflow-y-auto bg-transparent px-6 py-5 custom-scrollbar">
+          <div class="space-y-5">
+            @for (section of selectedRecordDetailContent().sections; track section.title) {
+              <section class="border-b border-slate-100 pb-5 last:border-b-0 last:pb-0">
+                <p class="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-slate-400">{{ section.title }}</p>
+                @if (section.body) {
+                  <p class="mt-3 text-[0.82rem] leading-relaxed text-slate-600">{{ section.body }}</p>
+                }
+                @if (section.items && section.items.length > 0) {
+                  <dl class="mt-4 divide-y divide-slate-100">
+                    @for (item of section.items; track item.label) {
+                      <div class="grid grid-cols-[minmax(110px,0.72fr)_minmax(0,1fr)] gap-4 py-2.5">
+                        <dt class="text-[0.58rem] font-bold uppercase tracking-[0.14em] text-slate-400">{{ item.label }}</dt>
+                        <dd class="text-[0.76rem] font-semibold leading-snug text-[#291242]">
+                          {{ formatRecordDetailValue(item.value) }}
+                        </dd>
+                      </div>
+                    }
+                  </dl>
+                }
+              </section>
+            }
+          </div>
+          
+          <!-- Contact buttons inside modal -->
+          @if (detail.record?.contact || detail.record?.websiteUrl) {
+            @let record = detail.record;
+            <div class="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-4 bg-slate-50/50">
+              @if (record?.websiteUrl) {
+                <a
+                  [href]="record.websiteUrl.startsWith('http') ? record.websiteUrl : 'https://' + record.websiteUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border border-slate-200 px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#291242] shadow-sm transition-all hover:bg-slate-50"
+                >
+                  <svg lucideGlobe size="14"></svg>
+                  Visita la web oficial
+                </a>
+              }
+              @if (record?.contact) {
+                @let contactLink = record.contact.includes('@')
+                  ? 'mailto:' + record.contact.split('·')[0].trim()
+                  : 'tel:' + (record.contact.split('·')[1]?.replace('\\D+', '') || record.contact.replace('\\D+', ''));
+                <a
+                  [href]="contactLink"
+                  class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#291242] px-5 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-md transition-all hover:bg-[#3d1a62]"
+                >
+                  <svg lucideMail size="14"></svg>
+                  Contactar Entidad
+                </a>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,107 @@
+<footer class="bg-[#291242] text-white pt-20 pb-12 border-t border-white/5 font-nunito relative">
+  <div class="max-w-[100rem] mx-auto px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-0">
+      <div class="space-y-8 flex flex-col items-center lg:items-start lg:pr-8">
+        <div class="flex items-center gap-6">
+          <div class="w-[10rem]">
+            <img src="/assets/branding/logo-gov-co.png" class="w-full h-auto object-contain" alt="GOV.CO" />
+          </div>
+          <div class="border-l border-white/20 pl-6">
+            <img src="/assets/branding/gov-co-footer.png" class="w-[4.25rem] h-auto object-contain" alt="Colombia" />
+          </div>
+        </div>
+      </div>
+      <div class="space-y-6 text-left lg:px-8 lg:border-l lg:border-white/20">
+        <div class="pl-4">
+          <h4 class="font-alternate text-sm font-bold uppercase tracking-widest text-white mb-4">
+            {{ getWebText('footer_col2_title', 'Ministerio de las Culturas, las Artes y los Saberes') }}
+          </h4>
+          <div class="space-y-4 text-[0.7rem] text-slate-300 font-light leading-relaxed">
+            <p>{{ getWebText('footer_col2_address', 'Dirección: Calle 9 No. 8 - 31 Bogotá') }}</p>
+            <p>{{ getWebText('footer_col2_schedule', 'Horario de atención: 8:00 a.m. a 5:00 p.m. jornada continua.') }}</p>
+            <p>{{ getWebText('footer_col2_phone', 'Teléfono: +57 (601) 3424100') }}</p>
+            <p>{{ getWebText('footer_col2_free_line', 'Línea gratuita: 018000 938081') }}</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-2 pt-2 text-[0.62rem] font-alternate uppercase tracking-[0.18em] text-white/80">
+              @for (item of socialNetworks; track item.label) {
+                <a
+                  [href]="item.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="rounded-sm hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]"
+                  [attr.aria-label]="'Abrir ' + item.label + ' en una nueva pestaña'"
+                >{{ item.label }}</a>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-6 text-left lg:px-8 lg:border-l lg:border-white/20">
+        <div class="pl-4">
+          <h4 class="font-alternate text-sm font-bold uppercase tracking-widest text-white mb-4">
+            {{ getWebText('footer_col3_title', 'Contacto Correspondencia') }}
+          </h4>
+          <div class="space-y-4 text-[0.7rem] text-slate-300 font-light leading-relaxed">
+            <p>{{ getWebText('footer_col3_address', 'Dirección: Calle 9 No. 8 - 31 Bogotá') }}</p>
+            <p>{{ getWebText('footer_col3_schedule', 'Lunes a viernes de 8:00 a.m. a 4:00 p.m. jornada continua') }}</p>
+            <div>
+              <p>{{ getWebText('footer_col3_email_label', 'Correo:') }}</p>
+              <a [href]="'mailto:' + getWebText('footer_col3_email', 'servicioalciudadano@mincultura.gov.co')" class="inline-block rounded-sm text-white underline hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]">{{ getWebText('footer_col3_email', 'servicioalciudadano@mincultura.gov.co') }}</a>
+              <p>{{ getWebText('footer_col3_email_note', '(Los correos que se reciban después de las 5:00 p. m., se radicarán el siguiente día hábil)') }}</p>
+            </div>
+            <div>
+              <p class="font-bold text-white">{{ getWebText('footer_col3_corruption_title', 'Registro de denuncias de corrupción:') }}</p>
+              <a [href]="'mailto:' + getWebText('footer_col3_corruption_email', 'soytransparente@mincultura.gov.co')" class="inline-block rounded-sm text-white underline hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]">{{ getWebText('footer_col3_corruption_email', 'soytransparente@mincultura.gov.co') }}</a>
+            </div>
+            <div>
+              <p class="font-bold text-white">{{ getWebText('footer_col3_legal_title', 'Notificaciones judiciales:') }}</p>
+              <a [href]="'mailto:' + getWebText('footer_col3_legal_email', 'notificaciones@mincultura.gov.co')" class="inline-block rounded-sm text-white underline hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]">{{ getWebText('footer_col3_legal_email', 'notificaciones@mincultura.gov.co') }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-10 text-left lg:px-8 lg:border-l lg:border-white/20">
+        <div class="pl-4">
+          <h4 class="font-alternate text-sm font-bold uppercase tracking-widest text-white mb-4">
+            {{ getWebText('footer_col4_services_title', 'Servicios a la Ciudadanía') }}
+          </h4>
+          <ul class="space-y-2 text-[0.7rem] text-slate-300 font-light">
+            @for (item of citizenshipServices; track item.label) {
+              <li>
+                <a
+                  [href]="item.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block rounded-sm underline hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]"
+                >{{ item.label }}</a>
+              </li>
+            }
+          </ul>
+        </div>
+        <div class="pl-4">
+          <h4 class="font-alternate text-sm font-bold uppercase tracking-widest text-white mb-4">
+            {{ getWebText('footer_col4_about_title', 'Acerca del sitio') }}
+          </h4>
+          <ul class="space-y-2 text-[0.7rem] text-slate-300 font-light">
+            @for (item of aboutSite; track item.label) {
+              <li>
+                <a
+                  [href]="item.href"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block rounded-sm underline hover:text-[#00DA5E] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242]"
+                >{{ item.label }}</a>
+              </li>
+            }
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[0.6rem] text-slate-400 font-alternate uppercase tracking-[0.2em]">
+      <p>{{ getWebText('footer_credits_text', 'Copyright ©') }} {{ currentYear }} Ministerio de las Culturas</p>
+      <div class="flex items-center gap-2">
+        <span class="text-[#00DA5E] font-bold">{{ getWebText('footer_credits_tagline', 'Colombia - Potencia de la Vida') }}</span>
+        <div class="w-1.5 h-1.5 rounded-full bg-[#00DA5E] animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+</footer>

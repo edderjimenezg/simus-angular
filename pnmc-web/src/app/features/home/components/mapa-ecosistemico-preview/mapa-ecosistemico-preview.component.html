@@ -1,0 +1,89 @@
+<app-content-wrapper class="bg-white block" id="mapa-home">
+  <app-section-header backgroundText="MAPA" foregroundText="Mapa Ecosistémico" [compact]="true"></app-section-header>
+  
+  <div class="mt-2 mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <p class="max-w-2xl text-[0.8rem] leading-relaxed text-slate-500">
+      El mapeo sigue creciendo y ahora abre una puerta directa para que organizaciones, festivales, mercados, redes, lutieres y otros procesos del país registren su información y aparezcan en esta lectura pública del ecosistema musical colombiano.
+    </p>
+    <button
+      type="button"
+      (click)="onOpenParticipation()"
+      class="bg-[#291242] text-white self-start lg:self-auto px-8 py-4 rounded-xl font-bold text-[0.68rem] uppercase font-alternate tracking-widest flex items-center gap-3 hover:bg-[#6100D7] transition-all shadow-xl cursor-pointer border-0"
+    >
+      Registra tus procesos
+      <svg lucideArrowRight [size]="14"></svg>
+    </button>
+  </div>
+
+  @if (isLoading || isRefreshing) {
+    <div class="mb-6">
+      <app-loading-state
+        title="Actualizando capas del mapa..."
+        description="Estamos consolidando los datos territoriales más recientes."
+      ></app-loading-state>
+    </div>
+  }
+
+  @if (isError) {
+    <div class="mb-6">
+      <app-error-state
+        title="No pudimos sincronizar el preview del mapa"
+        [description]="error?.message || 'Intenta de nuevo para recargar las capas.'"
+        (retry)="retryMapData()"
+      ></app-error-state>
+    </div>
+  }
+
+  <div class="mt-2 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-shadow duration-700">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      @for (cat of previewCards; track cat.name) {
+        <div
+          (click)="onNavigateToMapLayer(cat.targetLayer)"
+          class="group relative aspect-video md:aspect-auto md:h-[220px] lg:h-[260px] overflow-hidden cursor-pointer bg-slate-900 border-b border-white/5 sm:border-b-0 sm:border-r"
+        >
+          <img
+            [src]="cat.img"
+            alt=""
+            class="absolute inset-0 w-full h-full object-cover transition-all duration-1000 grayscale-[40%] brightness-95 opacity-80 group-hover:grayscale-0 group-hover:brightness-100 group-hover:opacity-100 group-hover:scale-105"
+          />
+          <div class="absolute inset-0 bg-[#291242]/20 group-hover:opacity-0 transition-opacity duration-700"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-[#291242] via-transparent to-transparent group-hover:from-[#291242]/90 transition-all"></div>
+          <div class="relative h-full p-6 flex flex-col justify-end text-left">
+            <span class="text-[0.55rem] font-bold text-[#8BF784] uppercase font-alternate tracking-[0.18em] mb-1 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 duration-500">
+              Presencia activa en {{ formatMetricValue(cat.departments || 0) }} departamentos
+            </span>
+            <h4 class="font-gregor text-white text-2xl lg:text-3xl font-bold uppercase leading-none mb-1 group-hover:text-[#8BF784] transition-colors">
+              {{ cat.name }}
+            </h4>
+            <div class="flex items-center justify-between border-t border-white/10 mt-3 pt-3">
+              <span class="text-white font-bold text-[0.45rem] uppercase font-alternate tracking-widest bg-white/10 px-1.5 py-0.5 rounded-md">
+                {{ cat.count === null ? 'Vista integrada' : formatMetricValue(cat.count) + ' registros' }}
+              </span>
+              <svg lucideArrowUpRight [size]="14" class="text-[#8BF784] opacity-0 group-hover:opacity-100 transition-all"></svg>
+            </div>
+          </div>
+        </div>
+      }
+      
+      <div class="bg-[#291242] p-8 md:p-10 flex flex-col items-start justify-center gap-6 relative group overflow-hidden aspect-video md:aspect-auto md:h-[220px] lg:h-[260px]">
+        <div class="absolute inset-0 bg-[#00DA5E]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div class="relative z-10 flex flex-col gap-2">
+          <h4 class="font-alternate text-white text-2xl lg:text-3xl font-bold uppercase tracking-widest leading-[1.1]">
+            Explora el Mapa Ecosistémico
+          </h4>
+          <p class="text-[0.65rem] text-[#8BF784] uppercase tracking-[0.25em] font-alternate">
+            Base de datos nacional
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="onNavigateToMapLayer('General')"
+          class="bg-[#00DA5E] hover:bg-[#8BF784] text-[#291242] font-bold px-8 py-3.5 rounded-xl text-[0.7rem] uppercase font-alternate tracking-widest flex items-center gap-3 relative z-10 shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer border-0"
+        >
+          Acceder al Mapa
+          <svg lucideArrowRight [size]="14"></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</app-content-wrapper>

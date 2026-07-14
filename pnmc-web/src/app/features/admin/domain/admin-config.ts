@@ -1,0 +1,416 @@
+export interface AdminRole {
+  id: string;
+  label: string;
+  shortLabel: string;
+  description: string;
+  capabilities: string[];
+  adminAssignable?: boolean;
+}
+
+export const ADMIN_ROLES: Record<string, AdminRole> = {
+  webmaster: {
+    id: 'webmaster',
+    label: 'Webmaster',
+    shortLabel: 'Webmaster',
+    description: 'Control total de la consola: usuarios, módulos, datos, configuración, revisión, publicación y mantenimiento.',
+    capabilities: ['read', 'read_privileged', 'create', 'edit', 'review', 'request_changes', 'reject', 'approve', 'publish', 'archive', 'import', 'export', 'use_assistant', 'extract_from_document', 'manage_global_users', 'manage_site_texts', 'manage_system', 'view_audit'],
+  },
+  gestor_interno: {
+    id: 'gestor_interno',
+    label: 'Gestor interno',
+    shortLabel: 'Gestor',
+    description: 'Segundo nivel de administración. Gestiona módulos, revisa, aprueba y acompaña información de su componente, sin administrar usuarios ni sistema.',
+    capabilities: ['read', 'read_privileged', 'create', 'edit', 'review', 'request_changes', 'reject', 'approve', 'import', 'export', 'use_assistant'],
+  },
+  aliado_admin: {
+    id: 'aliado_admin',
+    label: 'Aliado administrador',
+    shortLabel: 'Aliado admin',
+    description: 'Administra registros y usuarios de su entidad aliada dentro del portal de aliados.',
+    capabilities: ['read', 'read_privileged', 'create', 'edit_own', 'edit_entity_records', 'submit_review', 'import', 'export', 'use_assistant', 'manage_entity_users'],
+    adminAssignable: false,
+  },
+  aliado_editor: {
+    id: 'aliado_editor',
+    label: 'Aliado editor',
+    shortLabel: 'Aliado editor',
+    description: 'Crea, edita e importa registros de su entidad aliada, sin gestionar usuarios ni aprobar.',
+    capabilities: ['read', 'read_privileged', 'create', 'edit_own', 'edit_entity_records', 'submit_review', 'import', 'use_assistant'],
+    adminAssignable: false,
+  },
+  aliado_lector: {
+    id: 'aliado_lector',
+    label: 'Aliado lector',
+    shortLabel: 'Aliado lector',
+    description: 'Consulta información permitida de su entidad aliada y del mapa ecosistémico sin crear ni editar registros.',
+    capabilities: ['read', 'read_privileged', 'export'],
+    adminAssignable: false,
+  },
+  externo: {
+    id: 'externo',
+    label: 'Externo',
+    shortLabel: 'Externo',
+    description: 'Participante público sin acceso administrativo ni portal aliado privilegiado.',
+    capabilities: ['create_public_submission'],
+  },
+};
+
+export interface AdminStatusConfig {
+  label: string;
+  variant: string;
+}
+
+export const ADMIN_STATUS: Record<string, AdminStatusConfig> = {
+  borrador: { label: 'Borrador', variant: 'neutral' },
+  en_revision: { label: 'En revisión', variant: 'warning' },
+  ajustes_solicitados: { label: 'Ajustes solicitados', variant: 'warning' },
+  aprobado: { label: 'Aprobado', variant: 'success' },
+  publicado: { label: 'Publicado', variant: 'info' },
+  rechazado: { label: 'Rechazado', variant: 'danger' },
+  archivado: { label: 'Archivado', variant: 'neutral' },
+};
+
+export interface AdminArea {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export const ADMIN_AREAS: Record<string, AdminArea> = {
+  ecosystem: {
+    id: 'ecosystem',
+    label: 'Mapa ecosistémico',
+    description: 'Organizaciones, festivales, mercados, escuelas, redes de documentación, lutieres y registros territoriales.',
+  },
+  communications: {
+    id: 'communications',
+    label: 'Comunicaciones y prensa',
+    description: 'Agenda, noticias, álbumes, recursos editoriales y piezas visibles en la web pública.',
+  },
+};
+
+const baseAdminFields = [
+  { name: 'id', label: 'ID existente', type: 'text', system: true },
+  { name: 'status', label: 'Estado', type: 'status', defaultValue: 'borrador' },
+];
+
+export const ADMIN_COVERAGE_LEVELS = {
+  municipal: 'Municipal',
+  departamental: 'Departamental',
+  nacional: 'Nacional',
+};
+
+const territoryFields = [
+  { name: 'coverageLevel', label: 'Cobertura', type: 'coverage', defaultValue: 'municipal' },
+  { name: 'department', label: 'Departamento', type: 'department', required: true },
+  { name: 'municipality', label: 'Municipio', type: 'municipality' },
+];
+
+export interface AdminEntityType {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export const ADMIN_ENTITY_TYPES: AdminEntityType[] = [
+  { id: 'organizacion', label: 'Organización', description: 'Entidad jurídica, red, fundación, corporación, asociación o institución responsable de procesos.' },
+  { id: 'escuela_musica', label: 'Escuela de música', description: 'Escuela, proceso formativo o programa de práctica musical.' },
+  { id: 'lutier', label: 'Lutier', description: 'Lutier independiente, taller o colectivo de lutería.' },
+  { id: 'festival', label: 'Festival', description: 'Festival, encuentro o circuito musical administrado por una entidad.' },
+  { id: 'mercado_musical', label: 'Mercado musical', description: 'Mercado, rueda, vitrina o plataforma de intermediación musical.' },
+  { id: 'espacio', label: 'Espacio', description: 'Sala, teatro, casa cultural, estudio o infraestructura musical.' },
+  { id: 'colectivo', label: 'Colectivo', description: 'Agrupación, colectivo creativo o proceso autogestionado.' },
+  { id: 'individuo', label: 'Individuo', description: 'Persona natural vinculada al ecosistema musical.' },
+];
+
+export interface AdminField {
+  name: string;
+  label: string;
+  type: string;
+  required?: boolean;
+  system?: boolean;
+  defaultValue?: any;
+  rows?: number;
+  wide?: boolean;
+  options?: Array<{ value: string; label: string }>;
+  step?: string;
+}
+
+export interface AdminModule {
+  id: string;
+  area: string;
+  label: string;
+  table: string;
+  endpoint: string;
+  description: string;
+  allowedRoles: string[];
+  required: string[];
+  fields: AdminField[];
+}
+
+export const ADMIN_MODULES: AdminModule[] = [
+  {
+    id: 'festivals',
+    area: 'ecosystem',
+    label: 'Festivales',
+    table: 'Festivales',
+    endpoint: '/api/v1/admin/data/map/festivals',
+    description: 'Festivales, encuentros y circuitos musicales registrados para el mapa.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['name', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'name', label: 'Nombre del festival', type: 'text', required: true },
+      { name: 'versionsCount', label: 'Número de versiones', type: 'number' },
+      { name: 'lastEditionDate', label: 'Fecha última versión', type: 'date' },
+      { name: 'description', label: 'Descripción', type: 'textarea', rows: 4, wide: true },
+      { name: 'organizer', label: 'Organizador', type: 'text' },
+      { name: 'organizerEmail', label: 'Correo organizador', type: 'email' },
+      { name: 'organizerPhone', label: 'Teléfono organizador', type: 'text' },
+      { name: 'organizerWebsiteUrl', label: 'Sitio web organizador', type: 'url' },
+      { name: 'contactEmail', label: 'Correo festival', type: 'email' },
+      { name: 'contactPhone', label: 'Teléfono festival', type: 'text' },
+      { name: 'websiteUrl', label: 'Sitio web festival', type: 'url' },
+      { name: 'instagramUrl', label: 'Instagram', type: 'url' },
+      { name: 'facebookUrl', label: 'Facebook', type: 'url' },
+      { name: 'otherUrl', label: 'Otro enlace', type: 'url' },
+      { name: 'hasCurrentYearEdition', label: 'Tiene versión vigente este año', type: 'checkbox' },
+      { name: 'currentYearEditionStatus', label: 'Estado versión actual', type: 'text' },
+      { name: 'currentYearStartDate', label: 'Inicio versión actual', type: 'date' },
+      { name: 'currentYearEndDate', label: 'Fin versión actual', type: 'date' },
+      ...territoryFields,
+    ],
+  },
+  {
+    id: 'musicSchools',
+    area: 'ecosystem',
+    label: 'Escuelas de música',
+    table: 'EscuelasMusica',
+    endpoint: '/api/v1/admin/data/map/schools',
+    description: 'Escuelas, procesos formativos, agrupaciones y capacidades pedagógicas.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['name', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'name', label: 'Nombre de la escuela', type: 'text', required: true },
+      { name: 'schoolCategory', label: 'Categoría escuela', type: 'text' },
+      { name: 'schoolType', label: 'Tipo de escuela', type: 'text' },
+      { name: 'responsibleEntity', label: 'Entidad responsable', type: 'text' },
+      { name: 'directorName', label: 'Nombre director', type: 'text' },
+      { name: 'contactEmail', label: 'Correo contacto', type: 'email' },
+      { name: 'contactPhone', label: 'Teléfono contacto', type: 'text' },
+      { name: 'websiteUrl', label: 'Sitio web', type: 'url' },
+      { name: 'instagramUrl', label: 'Instagram', type: 'url' },
+      { name: 'facebookUrl', label: 'Facebook', type: 'url' },
+      { name: 'otherUrl', label: 'Otro enlace', type: 'url' },
+      ...territoryFields,
+      { name: 'specificLocation', label: 'Lugar específico', type: 'text' },
+      { name: 'addressText', label: 'Dirección', type: 'text' },
+      { name: 'latitude', label: 'Latitud', type: 'number', step: '0.000001' },
+      { name: 'longitude', label: 'Longitud', type: 'number', step: '0.000001' },
+      { name: 'trainingCapacity', label: 'Capacidad formativa', type: 'number' },
+      { name: 'students', label: 'Cantidad estudiantes', type: 'number' },
+      { name: 'activeGroupsCount', label: 'Cantidad grupos activos', type: 'number' },
+      { name: 'trainingProcesses', label: 'Procesos formativos', type: 'textarea', rows: 3, wide: true },
+      { name: 'musicalPractices', label: 'Prácticas musicales', type: 'textarea', rows: 3, wide: true },
+      { name: 'isActiveSchool', label: 'Escuela activa', type: 'checkbox', defaultValue: true },
+      { name: 'observations', label: 'Observaciones', type: 'textarea', rows: 3, wide: true },
+    ],
+  },
+  {
+    id: 'musicMarkets',
+    area: 'ecosystem',
+    label: 'Mercados musicales',
+    table: 'MercadosMusicales',
+    endpoint: '/api/v1/admin/data/map/markets',
+    description: 'Mercados, ruedas, vitrinas y plataformas de intermediación musical.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['name', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'name', label: 'Nombre del mercado', type: 'text', required: true },
+      { name: 'editionsCount', label: 'Número de ediciones', type: 'number' },
+      { name: 'periodicity', label: 'Periodicidad', type: 'text' },
+      { name: 'description', label: 'Descripción', type: 'textarea', rows: 4, wide: true },
+      { name: 'hasCurrentYearEdition', label: 'Tiene edición vigente este año', type: 'checkbox' },
+      { name: 'currentYearEditionStatus', label: 'Estado edición actual', type: 'text' },
+      { name: 'currentYearStartDate', label: 'Inicio edición actual', type: 'date' },
+      { name: 'currentYearEndDate', label: 'Fin edición actual', type: 'date' },
+      { name: 'responsibleEntity', label: 'Entidad responsable', type: 'text' },
+      { name: 'responsibleEntityEmail', label: 'Correo entidad responsable', type: 'email' },
+      { name: 'responsibleEntityPhone', label: 'Teléfono entidad responsable', type: 'text' },
+      { name: 'responsibleEntityWebsiteUrl', label: 'Sitio web entidad responsable', type: 'url' },
+      { name: 'associatedFestivalId', label: 'ID festival asociado', type: 'number' },
+      { name: 'associatedFestivalDisplayName', label: 'Nombre festival asociado', type: 'text' },
+      { name: 'scopeType', label: 'Alcance', type: 'text' },
+      { name: 'marketMode', label: 'Modalidad', type: 'text' },
+      ...territoryFields,
+      { name: 'specificLocation', label: 'Lugar específico', type: 'text' },
+    ],
+  },
+  {
+    id: 'organizations',
+    area: 'ecosystem',
+    label: 'Redes de documentación',
+    table: 'RedesDocumentacion',
+    endpoint: '/api/v1/admin/data/organizations',
+    description: 'Redes, centros de documentación e investigación y actores organizativos.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['name', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'name', label: 'Nombre', type: 'text', required: true },
+      { name: 'organizationType', label: 'Tipo centro', type: 'text' },
+      ...territoryFields,
+      { name: 'territorialScope', label: 'Zona', type: 'text' },
+      { name: 'latitude', label: 'Latitud', type: 'number', step: '0.000001' },
+      { name: 'longitude', label: 'Longitud', type: 'number', step: '0.000001' },
+      { name: 'description', label: 'Descripción', type: 'textarea', rows: 4, wide: true },
+      { name: 'contactEmail', label: 'Correo contacto', type: 'email' },
+      { name: 'websiteUrl', label: 'Sitio web', type: 'url' },
+      { name: 'facebookUrl', label: 'Facebook', type: 'url' },
+      { name: 'instagramUrl', label: 'Instagram', type: 'url' },
+      { name: 'otherUrl', label: 'Otro enlace', type: 'url' },
+    ],
+  },
+  {
+    id: 'spacesInfrastructure',
+    area: 'ecosystem',
+    label: 'Lutieres',
+    table: 'Lutieres',
+    endpoint: '/api/v1/admin/data/spaces-infrastructure',
+    description: 'Lutieres individuales, talleres y colectivos de lutería.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['name', 'actorType', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'name', label: 'Nombre', type: 'text', required: true },
+      { name: 'actorType', label: 'Tipo lutier', type: 'select', required: true, options: [
+        { value: 'individual', label: 'Individual' },
+        { value: 'taller', label: 'Taller' },
+        { value: 'colectivo', label: 'Colectivo' },
+      ] },
+      { name: 'workshopName', label: 'Nombre taller', type: 'text' },
+      { name: 'primaryFunction', label: 'Especialidad', type: 'text' },
+      { name: 'instruments', label: 'Instrumentos', type: 'textarea', rows: 3, wide: true },
+      { name: 'description', label: 'Descripción', type: 'textarea', rows: 4, wide: true },
+      { name: 'contactName', label: 'Nombre contacto', type: 'text' },
+      { name: 'contactEmail', label: 'Correo contacto', type: 'email' },
+      { name: 'contactPhone', label: 'Teléfono contacto', type: 'text' },
+      { name: 'websiteUrl', label: 'Sitio web', type: 'url' },
+      { name: 'facebookUrl', label: 'Facebook', type: 'url' },
+      { name: 'instagramUrl', label: 'Instagram', type: 'url' },
+      { name: 'otherUrl', label: 'Otro enlace', type: 'url' },
+      ...territoryFields,
+      { name: 'addressText', label: 'Dirección', type: 'text' },
+      { name: 'zone', label: 'Zona', type: 'text' },
+      { name: 'latitude', label: 'Latitud', type: 'number', step: '0.000001' },
+      { name: 'longitude', label: 'Longitud', type: 'number', step: '0.000001' },
+    ],
+  },
+  {
+    id: 'agenda',
+    area: 'communications',
+    label: 'Agenda',
+    table: 'Agenda',
+    endpoint: '/api/v1/admin/data/agenda/events',
+    description: 'Eventos, convocatorias y actividades territoriales.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['title', 'date', 'department'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'title', label: 'Título', type: 'text', required: true },
+      { name: 'shortDescription', label: 'Descripción corta', type: 'textarea', rows: 2, wide: true },
+      { name: 'description', label: 'Descripción larga', type: 'textarea', rows: 5, wide: true },
+      { name: 'category', label: 'Categoría', type: 'text' },
+      { name: 'date', label: 'Fecha inicio', type: 'date', required: true },
+      { name: 'endDate', label: 'Fecha fin', type: 'date' },
+      { name: 'timeLabel', label: 'Hora inicio', type: 'time' },
+      { name: 'endTimeLabel', label: 'Hora fin', type: 'time' },
+      ...territoryFields,
+      { name: 'location', label: 'Lugar específico', type: 'text' },
+      { name: 'organizer', label: 'Organizador', type: 'text' },
+      { name: 'imageUrl', label: 'URL más información', type: 'url' },
+      { name: 'festivalId', label: 'ID festival relacionado', type: 'number' },
+      { name: 'sortOrder', label: 'Orden visualización', type: 'number' },
+    ],
+  },
+  {
+    id: 'news',
+    area: 'communications',
+    label: 'Noticias',
+    table: 'Noticias',
+    endpoint: '/api/v1/admin/data/news/articles',
+    description: 'Publicaciones informativas y notas de prensa del entorno PNMC.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['title'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'title', label: 'Título', type: 'text', required: true },
+      { name: 'slug', label: 'Slug', type: 'text' },
+      { name: 'summary', label: 'Entradilla', type: 'textarea', rows: 3, wide: true },
+      { name: 'contentHtml', label: 'Cuerpo', type: 'textarea', rows: 7, wide: true },
+      { name: 'quoteText', label: 'Cita destacada', type: 'textarea', rows: 2, wide: true },
+      { name: 'author', label: 'Autor', type: 'text' },
+      { name: 'category', label: 'Categoría', type: 'text' },
+      { name: 'date', label: 'Fecha publicación', type: 'date' },
+      { name: 'imageUrl', label: 'URL externa', type: 'url' },
+      { name: 'embedUrl', label: 'URL embed', type: 'url' },
+      { name: 'sortOrder', label: 'Orden visualización', type: 'number' },
+    ],
+  },
+  {
+    id: 'gallery',
+    area: 'communications',
+    label: 'Galería / álbumes',
+    table: 'AlbumesGaleria',
+    endpoint: '/api/v1/admin/data/gallery/albums',
+    description: 'Módulo de galería y álbumes. El catálogo editorial tiene módulo propio separado.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['title'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'title', label: 'Título álbum', type: 'text', required: true },
+      { name: 'summary', label: 'Descripción álbum', type: 'textarea', rows: 5, wide: true },
+      { name: 'category', label: 'Categoría', type: 'text' },
+      { name: 'sortOrder', label: 'Orden visualización', type: 'number' },
+    ],
+  },
+  {
+    id: 'editorial',
+    area: 'communications',
+    label: 'Editorial',
+    table: 'CatalogoEditorial',
+    endpoint: '/api/v1/admin/data/editorial/resources',
+    description: 'Catálogo editorial y publicaciones, separado de galería y álbumes.',
+    allowedRoles: ['webmaster', 'gestor_interno'],
+    required: ['title'],
+    fields: [
+      ...baseAdminFields,
+      { name: 'title', label: 'Título', type: 'text', required: true },
+      { name: 'summary', label: 'Resumen', type: 'textarea', rows: 5, wide: true },
+      { name: 'year', label: 'Año', type: 'text' },
+      { name: 'section', label: 'Sección', type: 'text' },
+      { name: 'sectionPath', label: 'Ruta de sección', type: 'text' },
+      { name: 'publicationType', label: 'Tipo de publicación', type: 'text' },
+      { name: 'category', label: 'Categoría', type: 'text' },
+      { name: 'author', label: 'Autor(es)', type: 'text' },
+      { name: 'corporateAuthor', label: 'Autor corporativo', type: 'text' },
+      { name: 'url', label: 'URL externa', type: 'url' },
+      { name: 'keywords', label: 'Palabras clave', type: 'tags', wide: true },
+      { name: 'sortOrder', label: 'Orden visualización', type: 'number' },
+    ],
+  },
+];
+
+export const getModulesForRole = (roleId: string): AdminModule[] => ADMIN_MODULES.filter((module) => (
+  module.allowedRoles.includes(roleId)
+));
+
+export const getModulesByAreaForRole = (roleId: string, areaId: string): AdminModule[] => getModulesForRole(roleId).filter((module) => (
+  module.area === areaId
+));
+
+export const canRole = (roleId: string, capability: string): boolean => (
+  ADMIN_ROLES[roleId]?.capabilities.includes(capability) ?? false
+);

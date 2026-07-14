@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title">
+  <title id="title">Propuesta de marca PNMC para fondo claro</title>
+  <g fill="none" stroke="#291242" stroke-width="12" stroke-linecap="round">
+    <path d="M164 82c-56 0-102 45-102 102s46 102 102 102c40 0 74-23 91-57M164 106c-43 0-78 35-78 78s35 78 78 78c30 0 56-17 69-42M164 130c-30 0-54 24-54 54s24 54 54 54c20 0 37-11 46-28M202 82c56 0 102 45 102 102s-46 102-102 102c-40 0-74-23-91-57M202 106c43 0 78 35 78 78s-35 78-78 78c-30 0-56-17-69-42M202 130c30 0 54 24 54 54s-24 54-54 54c-20 0-37-11-46-28"/>
+    <path d="M176 38c-31 0-56 25-56 56M190 38c31 0 56 25 56 56M176 330c-31 0-56-25-56-56M190 330c31 0 56-25 56-56"/>
+  </g>
+  <g fill="#291242" font-family="Arial, Helvetica, sans-serif">
+    <text x="370" y="118" font-size="44" letter-spacing="14">PLAN NACIONAL DE</text>
+    <text x="370" y="214" font-size="126" font-weight="900" letter-spacing="-4">MÚSICA</text>
+    <text x="370" y="282" font-size="54" letter-spacing="8">PARA LA</text><text x="730" y="282" font-size="54" font-weight="800" letter-spacing="8">CONVIVENCIA</text>
+  </g>
+</svg>

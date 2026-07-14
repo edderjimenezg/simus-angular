@@ -1,0 +1,16 @@
+@if (showNavigation()) {
+  <app-navigation
+    [scrolled]="scrolled()"
+    [forceSolid]="isSolidNavigation()"
+  ></app-navigation>
+}
+
+<main class="min-h-screen animate-page-entrance">
+  <router-outlet></router-outlet>
+</main>
+
+<app-floating-button></app-floating-button>
+
+@if (showGlobalFooter()) {
+  <app-footer></app-footer>
+}

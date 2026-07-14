@@ -1,0 +1,210 @@
+@if (!_enabled()) {
+  <div class="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 text-center">
+    <svg lucideAlertCircle class="mx-auto text-rose-500 mb-3 h-6 w-6"></svg>
+    <h3 class="text-sm font-black text-rose-950 uppercase font-alternate tracking-wide">Acceso Denegado</h3>
+    <p class="text-xs text-rose-700 mt-1 max-w-md mx-auto">Su perfil no cuenta con permisos suficientes para gestionar solicitudes, vinculaciones y calidad de datos del sistema.</p>
+  </div>
+} @else {
+  <div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-black text-slate-900 font-alternate uppercase tracking-wide">Gestión de solicitudes y vinculaciones</h2>
+        <p class="text-xs text-slate-400 mt-0.5">Administra registros huérfanos pre-cargados, reclamaciones de organizaciones del sector, coincidencias y alertas territoriales.</p>
+      </div>
+    </div>
+
+    @if (actionStatus()) {
+      <div class="p-4 rounded-xl border flex items-center gap-3 animate-fade-in"
+           [ngClass]="actionStatus()?.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'">
+        <svg lucideCheckCircle2 class="h-4 w-4" [ngClass]="actionStatus()?.type === 'success' ? 'text-emerald-600' : 'text-rose-600'"></svg>
+        <p class="text-xs font-bold">{{ actionStatus()?.message }}</p>
+      </div>
+    }
+
+    <!-- Tabs -->
+    <div class="border-b border-slate-200 flex gap-2">
+      <button
+        type="button"
+        (click)="activeTab.set('links')"
+        class="px-4 py-2.5 font-alternate text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer"
+        [ngClass]="activeTab() === 'links' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Vinculaciones ({{ pendingRequestsCount }})
+      </button>
+      <button
+        type="button"
+        (click)="activeTab.set('duplicates')"
+        class="px-4 py-2.5 font-alternate text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer"
+        [ngClass]="activeTab() === 'duplicates' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Duplicados ({{ pendingDuplicatesCount }})
+      </button>
+      <button
+        type="button"
+        (click)="activeTab.set('alerts')"
+        class="px-4 py-2.5 font-alternate text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer"
+        [ngClass]="activeTab() === 'alerts' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Alertas de Calidad ({{ pendingAlertsCount }})
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+      
+      <!-- Tab: Vinculaciones -->
+      @if (activeTab() === 'links') {
+        <div class="divide-y divide-slate-100">
+          @for (req of requests(); track req.id) {
+            <div class="p-5 flex flex-col md:flex-row md:items-start justify-between gap-4 hover:bg-slate-50/50 transition">
+              <div class="space-y-2 max-w-2xl">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 text-[0.58rem] font-bold text-violet-700 uppercase tracking-wide">
+                    {{ req.requesterRole }}
+                  </span>
+                  <span class="text-[0.68rem] text-slate-400 font-medium">{{ req.date }}</span>
+                  @if (req.status !== 'pendiente') {
+                    <span class="rounded-full px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide border"
+                          [ngClass]="req.status === 'aprobado' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-rose-50 border-rose-200 text-rose-700'">
+                      {{ req.status }}
+                    </span>
+                  }
+                </div>
+                <div>
+                  <h4 class="text-xs font-black text-slate-800">
+                    {{ req.requester }} <span class="text-slate-400 font-normal">solicita la vinculación de</span> {{ req.targetName }}
+                  </h4>
+                  <p class="text-[0.68rem] text-slate-400 mt-0.5">{{ req.targetType }} en el ecosistema territorial</p>
+                </div>
+                <p class="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3 leading-relaxed italic">
+                  "{{ req.reason }}"
+                </p>
+              </div>
+              @if (req.status === 'pendiente') {
+                <div class="flex items-center gap-2 shrink-0 self-end md:self-start">
+                  <button
+                    type="button"
+                    (click)="handleRequestAction(req.id, 'reject')"
+                    class="rounded-xl border border-slate-200 hover:border-rose-200 text-xs font-bold text-slate-600 hover:text-rose-600 px-3.5 py-2 transition cursor-pointer"
+                  >
+                    Rechazar
+                  </button>
+                  <button
+                    type="button"
+                    (click)="handleRequestAction(req.id, 'approve')"
+                    class="rounded-xl bg-[#00DA5E] hover:bg-[#00c454] text-xs font-black text-slate-950 px-4 py-2 uppercase font-alternate tracking-wide transition shadow-sm cursor-pointer"
+                  >
+                    Aceptar Vinculación
+                  </button>
+                </div>
+              }
+            </div>
+          } @empty {
+            <p class="p-8 text-center text-xs text-slate-400">No hay solicitudes de vinculación pendientes.</p>
+          }
+        </div>
+      }
+
+      <!-- Tab: Duplicados -->
+      @if (activeTab() === 'duplicates') {
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-left font-black uppercase tracking-widest text-slate-400">
+                <th scope="col" class="px-5 py-3">Registro A</th>
+                <th scope="col" class="px-3 py-3">Registro B</th>
+                <th scope="col" class="px-3 py-3">Ubicación</th>
+                <th scope="col" class="px-3 py-3 text-center">Coincidencia</th>
+                <th scope="col" class="px-5 py-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (dup of duplicates(); track dup.id) {
+                <tr class="hover:bg-slate-50/50 transition">
+                  <td class="px-5 py-4 font-bold text-slate-800">{{ dup.nameA }}</td>
+                  <td class="px-3 py-4 font-bold text-slate-800">{{ dup.nameB }}</td>
+                  <td class="px-3 py-4 text-slate-500">{{ dup.municipality }}, {{ dup.department }}</td>
+                  <td class="px-3 py-4 text-center">
+                    <span class="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[0.6rem] font-bold text-amber-700">
+                      {{ dup.similarity }}
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-right">
+                    @if (dup.status === 'pendiente') {
+                      <div class="inline-flex gap-2">
+                        <button
+                          type="button"
+                          (click)="handleDuplicateAction(dup.id, 'discard')"
+                          class="rounded-xl border border-slate-200 hover:border-slate-300 text-[0.68rem] font-bold text-slate-600 px-3 py-1.5 transition cursor-pointer"
+                        >
+                          Ignorar
+                        </button>
+                        <button
+                          type="button"
+                          (click)="handleDuplicateAction(dup.id, 'merge')"
+                          class="rounded-xl bg-[#291242] hover:bg-[#1d0b30] text-[0.68rem] font-bold text-white px-3.5 py-1.5 transition uppercase font-alternate tracking-wide cursor-pointer"
+                        >
+                          Fusionar Registros
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="rounded-full px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide border"
+                            [ngClass]="dup.status === 'fusionado' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'">
+                        {{ dup.status }}
+                      </span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="p-8 text-center text-xs text-slate-400">No hay posibles duplicados detectados.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <!-- Tab: Alertas de Calidad -->
+      @if (activeTab() === 'alerts') {
+        <div class="divide-y divide-slate-100">
+          @for (alt of alerts(); track alt.id) {
+            <div class="p-5 flex items-center justify-between gap-4 hover:bg-slate-50/50 transition">
+              <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                  <span class="rounded-full px-1.5 py-0.5 text-[0.52rem] font-black uppercase tracking-wider border"
+                        [ngClass]="alt.severity === 'alta' ? 'bg-rose-50 border-rose-200 text-rose-700' :
+                                   alt.severity === 'media' ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                                   'bg-blue-50 border-blue-200 text-blue-700'">
+                    Prioridad {{ alt.severity }}
+                  </span>
+                  <span class="text-[0.68rem] text-slate-400 font-bold uppercase tracking-wide">{{ alt.type }}</span>
+                </div>
+                <h4 class="text-xs font-bold text-slate-800">{{ alt.recordName }}</h4>
+                <p class="text-xs text-slate-500 max-w-xl leading-relaxed">{{ alt.issue }}</p>
+              </div>
+              <div>
+                @if (alt.status === 'pendiente') {
+                  <button
+                    type="button"
+                    (click)="handleAlertAction(alt.id)"
+                    class="rounded-xl border border-slate-200 hover:border-[#00DA5E] text-xs font-bold text-slate-600 hover:text-slate-950 hover:bg-[#00DA5E]/5 px-4 py-2 transition cursor-pointer"
+                  >
+                    Resolver Alerta
+                  </button>
+                } @else {
+                  <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide text-emerald-700">
+                    Resuelto
+                  </span>
+                }
+              </div>
+            </div>
+          } @empty {
+            <p class="p-8 text-center text-xs text-slate-400">No hay alertas de calidad de datos pendientes.</p>
+          }
+        </div>
+      }
+
+    </div>
+  </div>
+}

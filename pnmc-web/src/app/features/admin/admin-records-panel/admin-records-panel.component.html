@@ -1,0 +1,756 @@
+<div class="space-y-5 text-left font-nunito">
+  <!-- Table header + search -->
+  <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+    <div class="border-b border-slate-100 px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h3 class="text-sm font-black text-slate-900">{{ module.label }}</h3>
+        <p class="text-xs text-slate-400 mt-0.5">{{ module.description }} · Tabla: <code class="bg-slate-100 px-1 py-0.5 rounded text-[0.6rem]">{{ module.table }}</code></p>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <div class="relative">
+          <svg lucideSearch size="12" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></svg>
+          <input
+            type="text"
+            placeholder="Buscar registros…"
+            [ngModel]="q()"
+            (ngModelChange)="q.set($event)"
+            (keydown.enter)="loadRecords()"
+            class="rounded-xl border border-slate-200 bg-slate-55 pl-8 pr-3 py-2 text-xs text-slate-700 outline-none focus:border-[#291242] focus:bg-white w-48 transition"
+          />
+        </div>
+        <button type="button" (click)="loadRecords()" class="rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer" title="Actualizar registros">
+          <svg lucideRefreshCw size="13"></svg>
+        </button>
+        <button
+          type="button"
+          (click)="handleDownloadTemplate()"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer"
+          title="Descargar Plantilla Excel (.xlsx)"
+        >
+          <svg lucideDownload size="13" class="text-[#291242]"></svg>
+          Plantilla
+        </button>
+        <button
+          type="button"
+          (click)="openBulkImport()"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-[#00DA5E] hover:text-[#291242] transition cursor-pointer"
+          title="Importar Masivo (Excel o CSV)"
+        >
+          <svg lucideUpload size="13" class="text-[#00DA5E]"></svg>
+          Importar
+        </button>
+        <button
+          type="button"
+          (click)="startNewRecord()"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-4 py-2 text-xs font-black text-white transition cursor-pointer"
+        >
+          <svg lucidePlus size="13"></svg>
+          Nuevo
+        </button>
+      </div>
+    </div>
+
+    @if (message()) {
+      <div class="border-b border-slate-100 bg-slate-50 px-5 py-2 text-xs text-slate-500 font-medium">{{ message() }}</div>
+    }
+
+    <!-- Records table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100">
+            <th
+              (click)="requestSort('title')"
+              class="text-left px-5 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-700 transition"
+            >
+              <span class="flex items-center gap-1 select-none">
+                Nombre / Título
+                {{ sortKey() === 'title' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}
+              </span>
+            </th>
+            <th
+              (click)="requestSort('status')"
+              class="text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-700 transition"
+            >
+              <span class="flex items-center gap-1 select-none">
+                Estado
+                {{ sortKey() === 'status' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}
+              </span>
+            </th>
+            <th
+              (click)="requestSort('territory')"
+              class="hidden md:table-cell text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-700 transition"
+            >
+              <span class="flex items-center gap-1 select-none">
+                Territorio
+                {{ sortKey() === 'territory' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}
+              </span>
+            </th>
+            <th
+              (click)="requestSort('updatedAt')"
+              class="hidden lg:table-cell text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400 cursor-pointer hover:text-slate-700 transition"
+            >
+              <span class="flex items-center gap-1 select-none">
+                Actualización
+                {{ sortKey() === 'updatedAt' ? (sortDirection() === 'asc' ? '↑' : '↓') : '↕' }}
+              </span>
+            </th>
+            <th scope="col" class="text-right px-5 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-500">Acciones</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          @for (record of sortedRecords(); track record.id) {
+            <tr class="hover:bg-slate-50/80 transition-colors">
+              <td class="px-5 py-3.5">
+                <p class="font-semibold text-slate-900 leading-snug">{{ record.title || record.name || '#' + record.id }}</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">ID {{ record.id }}</p>
+              </td>
+              <td class="px-3 py-3.5">
+                <span [class]="'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ' + statusPillClass(record.status)">
+                  {{ statusText(record.status) }}
+                </span>
+              </td>
+              <td class="hidden md:table-cell px-3 py-3.5 text-xs text-slate-500">
+                {{ formatLocation(record.department, record.municipality) || '—' }}
+              </td>
+              <td class="hidden lg:table-cell px-3 py-3.5">
+                <p class="text-xs text-slate-500 font-semibold">{{ record.updatedAt || '—' }}</p>
+                @if (record.owner) {
+                  <p class="text-[10px] text-slate-400 mt-0.5 max-w-[10rem] truncate" [title]="record.owner">
+                    Por: {{ record.owner }}
+                  </p>
+                }
+              </td>
+              <td class="px-5 py-3.5 text-right">
+                <div class="inline-flex items-center gap-1">
+                  <!-- Preview -->
+                  <button
+                    type="button"
+                    (click)="previewRecord.set(record)"
+                    title="Vista previa"
+                    class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-slate-400 hover:border-blue-300 hover:text-blue-600 transition cursor-pointer"
+                  >
+                    <svg lucideEye size="11"></svg>
+                  </button>
+                  <!-- Edit -->
+                  <button
+                    type="button"
+                    (click)="editFromRecord(record)"
+                    title="Editar registro"
+                    class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-slate-500 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer"
+                  >
+                    <svg lucideEdit3 size="11"></svg>
+                  </button>
+                  <!-- Status changer -->
+                  <select
+                    [value]="record.status || 'borrador'"
+                    (change)="changeRecordStatus(record, $any($event.target).value)"
+                    class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-600 bg-white outline-none focus:border-[#291242] transition cursor-pointer"
+                    aria-label="Cambiar estado"
+                  >
+                    <option value="borrador">Borrador</option>
+                    <option value="en_evaluacion">En revisión</option>
+                    <option value="ajustes_solicitados">Ajustes solicitados</option>
+                    <option value="aprobado">Aprobado</option>
+                    <option value="publicado">Publicado</option>
+                    <option value="rechazado">Rechazado</option>
+                    <option value="archivado">Archivado</option>
+                  </select>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (sortedRecords().length === 0) {
+            <tr>
+              <td colSpan="5" class="px-5 py-10 text-center text-sm text-slate-400">
+                No hay registros para los filtros actuales.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PREVIEW MODAL -->
+  @if (previewRecord()) {
+    <div
+      class="fixed inset-0 z-[4500] flex items-center justify-center p-4"
+      style="background-color: rgba(15,23,42,0.7); backdrop-filter: blur(4px);"
+      (mousedown)="$event.target === $event.currentTarget && previewRecord.set(null)"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-100">
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span [class]="'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ' + statusPillClass(previewRecord().status)">
+                {{ statusText(previewRecord().status) }}
+              </span>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">ID {{ previewRecord().id }}</span>
+            </div>
+            <h2 class="font-alternate text-base uppercase font-bold tracking-wide text-slate-900 mt-1.5 leading-tight">{{ previewRecord().title || previewRecord().name || 'Registro' }}</h2>
+            <p class="text-xs text-slate-400 mt-0.5">{{ module?.label }} · {{ formatLocation(previewRecord().department, previewRecord().municipality) || 'Sin territorio' }}</p>
+          </div>
+          <button type="button" (click)="previewRecord.set(null)" class="rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition shrink-0 cursor-pointer">
+            <svg lucideX size="15"></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+          <div class="grid grid-cols-2 gap-3">
+            @for (field of module?.fields; track field.name) {
+              @if (field.name !== 'id' && field.name !== 'coverageLevel' && field.name !== 'department' && field.name !== 'municipality') {
+                @let val = previewRecord()[field.name] || previewRecord().metadata?.[field.name];
+                @let isEmpty = isValEmpty(val);
+                <div [class]="'rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 ' + (field.type === 'textarea' || field.wide ? 'col-span-2' : '')">
+                  <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{{ field.label }}</p>
+                  @if (isEmpty) {
+                    <p class="text-sm text-slate-300 font-normal italic">—</p>
+                  } @else if (field.type === 'checkbox') {
+                    <p class="text-sm font-semibold text-slate-800">{{ val === 'Sí' || val === true ? 'Sí' : 'No' }}</p>
+                  } @else if (field.type === 'textarea') {
+                    <p class="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{{ val }}</p>
+                  } @else if (field.type === 'url') {
+                    <a [href]="val" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:underline break-all">{{ val }}</a>
+                  } @else {
+                    <p class="text-sm font-semibold text-slate-800">{{ val }}</p>
+                  }
+                </div>
+              }
+            }
+            <!-- Territory -->
+            @if (previewRecord().department || previewRecord().municipality) {
+              <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Ubicación</p>
+                <p class="text-sm font-semibold text-slate-800">{{ formatLocation(previewRecord().department, previewRecord().municipality) }}</p>
+              </div>
+            }
+            @if (previewRecord().updatedAt) {
+              <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Última actualización</p>
+                <p class="text-sm font-semibold text-slate-800">{{ previewRecord().updatedAt }}</p>
+              </div>
+            }
+            @if (previewRecord().owner) {
+              <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Autor de la edición</p>
+                <p class="text-sm font-semibold text-slate-800">{{ previewRecord().owner }}</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" (click)="previewRecord.set(null)" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">
+            Cerrar
+          </button>
+          <button
+            type="button"
+            (click)="editFromRecord(previewRecord())"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-5 py-2.5 text-xs font-black text-white transition cursor-pointer"
+          >
+            <svg lucideEdit3 size="13"></svg>
+            Editar este registro
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- EDIT / CREATE FORM MODAL -->
+  @if (showEditModal()) {
+    <div
+      class="fixed inset-0 z-[4500] flex items-center justify-center p-4"
+      style="background-color: rgba(15,23,42,0.7); backdrop-filter: blur(4px);"
+      (mousedown)="$event.target === $event.currentTarget && cancelEdit()"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-center justify-between gap-4 px-6 py-5 border-b border-slate-100">
+          <div>
+            <h2 class="font-alternate text-base uppercase font-bold tracking-wide text-slate-900">{{ formValues()['id'] ? 'EDITAR REGISTRO' : 'NUEVO REGISTRO' }}</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Cambios en la tabla <code class="bg-slate-100 px-1 py-0.5 rounded">{{ module.table }}</code></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="openAiAssistant()"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-sm cursor-pointer"
+              title="Rellenar usando Asistente IA"
+            >
+              <svg lucideSparkles size="13" class="text-[#00DA5E]"></svg>
+              Asistente IA
+            </button>
+            <button type="button" (click)="cancelEdit()" class="rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition cursor-pointer">
+              <svg lucideX size="15"></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Form Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          
+          <!-- Basic information section -->
+          @if (fieldGroups['basic'].length > 0) {
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Información Básica</h3>
+              <div class="grid gap-4 sm:grid-cols-2">
+                @for (field of fieldGroups['basic']; track field.name) {
+                  @if (field.type === 'textarea') {
+                    <div class="sm:col-span-2 space-y-1">
+                      <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                      <textarea
+                        rows="3"
+                        [ngModel]="formValues()[field.name]"
+                        (ngModelChange)="updateFormField(field.name, $event)"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                      ></textarea>
+                    </div>
+                  } @else {
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                      <input
+                        [type]="field.type || 'text'"
+                        [ngModel]="formValues()[field.name]"
+                        (ngModelChange)="updateFormField(field.name, $event)"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                      />
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Contact information section -->
+          @if (fieldGroups['contact'].length > 0) {
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Contacto</h3>
+              <div class="grid gap-4 sm:grid-cols-2">
+                @for (field of fieldGroups['contact']; track field.name) {
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                    <input
+                      [type]="field.type || 'text'"
+                      [ngModel]="formValues()[field.name]"
+                      (ngModelChange)="updateFormField(field.name, $event)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Links section -->
+          @if (fieldGroups['links'].length > 0) {
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Enlaces y Redes Sociales</h3>
+              <div class="grid gap-4 sm:grid-cols-2">
+                @for (field of fieldGroups['links']; track field.name) {
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                    <input
+                      type="url"
+                      placeholder="https://..."
+                      [ngModel]="formValues()[field.name]"
+                      (ngModelChange)="updateFormField(field.name, $event)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Location and DIVIPOLA section -->
+          @if (hasTerritory || fieldGroups['location'].length > 0) {
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Ubicación Territorial</h3>
+              
+              @if (hasTerritory) {
+                <div class="grid gap-4 sm:grid-cols-3">
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">Cobertura</label>
+                    <select
+                      [ngModel]="formValues()['coverageLevel'] || 'municipal'"
+                      (ngModelChange)="updateCoverageLevel($event)"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    >
+                      <option value="municipal">Municipal</option>
+                      <option value="departamental">Departamental</option>
+                      <option value="nacional">Nacional</option>
+                    </select>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">Departamento @if (formValues()['coverageLevel'] !== 'nacional') { <span class="text-red-500">*</span> }</label>
+                    <select
+                      [disabled]="formValues()['coverageLevel'] === 'nacional'"
+                      [ngModel]="formValues()['department'] || ''"
+                      (ngModelChange)="updateFormField('department', $event); updateFormField('municipality', '')"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      @for (name of departmentsList; track name) {
+                        <option [value]="name">{{ titleCaseEs(name) }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">Municipio @if (formValues()['coverageLevel'] === 'municipal') { <span class="text-red-500">*</span> }</label>
+                    <select
+                      [disabled]="formValues()['coverageLevel'] !== 'municipal' || !formValues()['department']"
+                      [ngModel]="formValues()['municipality'] || ''"
+                      (ngModelChange)="updateFormField('municipality', $event)"
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    >
+                      <option value="">-- Seleccionar --</option>
+                      @for (name of municipalitiesList; track name) {
+                        <option [value]="name">{{ titleCaseEs(name) }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              }
+
+              <div class="grid gap-4 sm:grid-cols-2 mt-4">
+                @for (field of fieldGroups['location']; track field.name) {
+                  @if (!territoryFieldNames.has(field.name) || ['specificLocation', 'addressText', 'latitude', 'longitude', 'zone', 'territorialScope', 'location'].includes(field.name)) {
+                    <div class="space-y-1">
+                      <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                      <input
+                        [type]="field.type || 'text'"
+                        [step]="field.step"
+                        [ngModel]="formValues()[field.name]"
+                        (ngModelChange)="updateFormField(field.name, $event)"
+                        class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                      />
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Metrics and order section -->
+          @if (fieldGroups['metrics'].length > 0) {
+            <div class="space-y-4">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-2">Métricas y Fechas</h3>
+              <div class="grid gap-4 sm:grid-cols-3">
+                @for (field of fieldGroups['metrics']; track field.name) {
+                  <div class="space-y-1">
+                    <label class="text-xs font-bold text-slate-600">{{ field.label }}@if (field.required) { <span class="text-red-500">*</span> }</label>
+                    <input
+                      [type]="field.type || 'text'"
+                      [ngModel]="formValues()[field.name]"
+                      (ngModelChange)="updateFormField(field.name, $event)"
+                      class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs text-slate-700 focus:border-[#291242] outline-none transition"
+                    />
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Warnings and messages -->
+          @if (missingRequired.length > 0) {
+            <div class="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <svg lucideAlertCircle size="14" class="text-amber-500 mt-0.5 shrink-0"></svg>
+              <p class="text-xs font-medium text-amber-700">
+                Faltan campos obligatorios: {{ missingRequiredLabels }}.
+              </p>
+            </div>
+          }
+          @if (message()) {
+            <div class="flex items-center gap-2 rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600">
+              {{ message() }}
+            </div>
+          }
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" (click)="cancelEdit()" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="handleSave('draft')"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:border-[#291242] transition cursor-pointer"
+          >
+            <svg lucideSave size="13"></svg>
+            Borrador
+          </button>
+          <button
+            type="button"
+            (click)="handleSave('submit')"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-5 py-2.5 text-xs font-black text-white transition cursor-pointer"
+          >
+            <svg lucideSend size="13"></svg>
+            Guardar y enviar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- AI ASSISTANT DIALOG MODAL -->
+  @if (showAiAssistant()) {
+    <div
+      class="fixed inset-0 z-[5000] flex items-center justify-center p-4"
+      style="background-color: rgba(15,23,42,0.75); backdrop-filter: blur(4px);"
+      (mousedown)="$event.target === $event.currentTarget && !aiLoading() && showAiAssistant.set(false)"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+        <!-- Header -->
+        <div class="flex items-center justify-between gap-4 px-6 py-4.5 border-b border-slate-100 bg-gradient-to-r from-[#291242] to-[#3d1a63] text-white">
+          <div class="flex items-center gap-2">
+            <div class="h-8 w-8 rounded-lg bg-[#00DA5E]/20 flex items-center justify-center">
+              <svg lucideCpu size="16" class="text-[#00DA5E]"></svg>
+            </div>
+            <div>
+              <h2 class="font-alternate text-sm uppercase font-bold tracking-wider">Asistente híbrido</h2>
+              <p class="text-[10px] text-white/70">Extracción local con heurísticas contextuales y DIVIPOLA</p>
+            </div>
+          </div>
+          <button type="button" (click)="showAiAssistant.set(false)" class="rounded-xl border border-white/10 p-2 text-white/70 hover:text-white hover:bg-white/5 transition cursor-pointer">
+            <svg lucideX size="15"></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          @if (!aiResult()) {
+            <p class="text-xs text-slate-500 leading-relaxed font-medium">
+              Pega el texto libre de una noticia, la descripción de un festival o la información técnica de una escuela. El asistente mapeará automáticamente los campos detectados de forma local y segura.
+            </p>
+
+            <div
+              (dragover)="$event.preventDefault(); aiDragOver.set(true)"
+              (dragleave)="aiDragOver.set(false)"
+              (drop)="$event.preventDefault(); aiDragOver.set(false); onAiFileDrop($event)"
+              [class]="'border-2 border-dashed rounded-xl p-5 text-center transition-all cursor-pointer ' + (aiDragOver() ? 'border-[#00DA5E] bg-[#00DA5E]/5' : 'border-slate-200 hover:border-slate-300 bg-slate-50')"
+            >
+              <label class="cursor-pointer block">
+                <input type="file" accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.webp" (change)="handleAiFileUpload($event)" class="hidden" />
+                <svg lucideUpload size="24" class="mx-auto text-slate-400 mb-2"></svg>
+                <p class="text-xs font-bold text-slate-700">Arrastra TXT, MD, PDF o imagen aquí</p>
+                <p class="text-[10px] text-slate-400 mt-1">O haz clic para seleccionar desde tu computadora</p>
+              </label>
+            </div>
+
+            @if (aiSelectedFile()) {
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <svg lucideFileText size="15" class="text-[#291242] shrink-0"></svg>
+                  <div class="min-w-0">
+                    <p class="truncate text-xs font-bold text-slate-700">{{ aiSelectedFile().name }}</p>
+                    <p class="text-[10px] text-slate-400">{{ aiSelectedFile().type }}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  (click)="aiSelectedFile.set(null); aiAttachment.set(null); aiNotice.set('');"
+                  class="rounded-lg border border-slate-200 p-1.5 text-slate-400 hover:text-red-500 hover:border-red-200 transition cursor-pointer"
+                  title="Quitar archivo"
+                >
+                  <svg lucideX size="13"></svg>
+                </button>
+              </div>
+            }
+
+            <div class="space-y-1">
+              <label for="ai-paste-text" class="block text-[10px] font-black uppercase tracking-widest text-slate-400">O pega el texto libre aquí</label>
+              <textarea
+                id="ai-paste-text"
+                rows="8"
+                [(ngModel)]="aiText"
+                placeholder="Ej: El próximo 15 de Octubre se llevará a cabo el Festival de Música Andina en el departamento de Nariño, municipio de Pasto. Contará con la participación de 12 agrupaciones..."
+                class="w-full rounded-xl border border-slate-200 p-4 text-xs text-slate-700 outline-none focus:border-[#291242] transition placeholder:text-slate-400 font-nunito"
+              ></textarea>
+            </div>
+
+            @if (aiError()) {
+              <div class="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                <svg lucideAlertCircle size="14" class="text-red-500 mt-0.5 shrink-0"></svg>
+                <p class="text-xs font-medium text-red-700">{{ aiError() }}</p>
+              </div>
+            }
+          } @else {
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+                <svg lucideCheckCircle2 size="16" class="text-emerald-500 shrink-0"></svg>
+                <p class="text-xs font-medium text-emerald-800">
+                  ¡Campos extraídos con éxito! Revisa la información encontrada antes de aplicarla.
+                </p>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto p-1">
+                @for (entry of aiResult() | keyvalue; track entry.key) {
+                  @if (!isValEmpty(entry.value)) {
+                    <div class="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3">
+                      <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">{{ entry.key }}</p>
+                      <p class="text-xs font-semibold text-slate-800 break-words">{{ entry.value }}</p>
+                    </div>
+                  }
+                }
+              </div>
+
+              <button
+                type="button"
+                (click)="aiResult.set(null)"
+                class="text-xs font-bold text-[#291242] hover:underline cursor-pointer"
+              >
+                ← Analizar otro texto
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" (click)="showAiAssistant.set(false)" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">
+            Cancelar
+          </button>
+          @if (!aiResult()) {
+            <button
+              type="button"
+              (click)="handleAiAnalyze()"
+              [disabled]="aiLoading() || (!aiText().trim() && !aiSelectedFile())"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] disabled:opacity-50 px-5 py-2.5 text-xs font-black text-white transition shadow-sm cursor-pointer"
+            >
+              @if (aiLoading()) {
+                <svg lucideRefreshCw size="13" class="animate-spin"></svg>
+                Analizando...
+              } @else {
+                <svg lucideSparkles size="13" class="text-[#00DA5E]"></svg>
+                Extraer Datos
+              }
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="handleApplyAiResult()"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] px-5 py-2.5 text-xs font-black text-slate-950 transition shadow-sm cursor-pointer"
+            >
+              <svg lucideCheckCircle2 size="13"></svg>
+              Aplicar al Formulario
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- BULK IMPORT MODAL -->
+  @if (showBulkModal()) {
+    <div
+      class="fixed inset-0 z-[4500] flex items-center justify-center p-4"
+      style="background-color: rgba(15,23,42,0.75); backdrop-filter: blur(4px);"
+      (mousedown)="$event.target === $event.currentTarget && !bulkImporting() && showBulkModal.set(false)"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+        <!-- Header -->
+        <div class="flex items-center justify-between gap-4 px-6 py-5 border-b border-slate-100">
+          <div>
+            <h2 class="font-alternate text-base uppercase font-bold tracking-wide text-slate-900">IMPORTACIÓN MASIVA</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Adaptador de Excel (.xlsx) para el módulo {{ module.label }}</p>
+          </div>
+          <button type="button" (click)="showBulkModal.set(false)" class="rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-slate-700 hover:border-slate-300 transition cursor-pointer">
+            <svg lucideX size="15"></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          @if (bulkParsedRows().length === 0) {
+            <p class="text-xs text-slate-500 leading-relaxed font-medium">
+              Sube tu archivo de Excel (.xlsx) oficial del Plan Nacional de Música. Si tu archivo original tiene otra estructura, te sugerimos utilizar primero la herramienta <b>Asistente de Importación IA</b> para limpiarlo.
+            </p>
+
+            <div
+              (dragover)="$event.preventDefault(); bulkDragOver.set(true)"
+              (dragleave)="bulkDragOver.set(false)"
+              (drop)="$event.preventDefault(); bulkDragOver.set(false); onBulkFileDrop($event)"
+              [class]="'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ' + (bulkDragOver() ? 'border-[#00DA5E] bg-[#00DA5E]/5' : 'border-slate-300 hover:border-[#291242] bg-slate-50')"
+            >
+              <label class="cursor-pointer block">
+                <input type="file" accept=".xlsx" (change)="handleBulkFileUpload($event)" class="hidden" />
+                <svg lucideUpload size="32" class="mx-auto text-slate-400 mb-2"></svg>
+                <p class="text-xs font-bold text-slate-700">Arrastra tu archivo Excel aquí</p>
+                <p class="text-[10px] text-slate-400 mt-1">O haz clic para explorar en tu equipo</p>
+              </label>
+            </div>
+            
+            @if (bulkError()) {
+              <div class="flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                <svg lucideAlertCircle size="14" class="text-red-500 mt-0.5 shrink-0"></svg>
+                <p class="text-xs font-medium text-red-700">{{ bulkError() }}</p>
+              </div>
+            }
+          } @else {
+            <!-- Parsed Rows Details -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-slate-700">Registros leídos: {{ bulkParsedRows().length }}</span>
+                <span class="font-medium text-slate-400">Revisa la validación del bot antes de guardar</span>
+              </div>
+
+              <div class="max-h-[300px] overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 text-xs">
+                @for (row of bulkParsedRows(); track row.rowNumber) {
+                  <div class="p-3 flex items-start justify-between gap-4 hover:bg-slate-50/50">
+                    <div>
+                      <p class="font-bold text-slate-800">Fila {{ row.rowNumber }}: {{ row.title }}</p>
+                      @if (row.errors.length > 0) {
+                        <p class="text-[10px] text-red-500 font-semibold mt-1">⚠️ {{ row.errors.join(' · ') }}</p>
+                      } @else {
+                        <p class="text-[10px] text-green-600 font-semibold mt-1">✓ Fila lista para importar</p>
+                      }
+                    </div>
+                    <span [class]="'shrink-0 text-[10px] font-bold rounded-full px-2 py-0.5 ' + (row.isValid ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200')">
+                      {{ row.isValid ? 'Válido' : 'Errores' }}
+                    </span>
+                  </div>
+                }
+              </div>
+
+              <!-- Options -->
+              <div class="flex items-center gap-2 p-1">
+                <input type="checkbox" id="bulk-ignore" [(ngModel)]="bulkIgnoreErrors" class="h-4 w-4 accent-[#291242] cursor-pointer" />
+                <label for="bulk-ignore" class="text-xs text-slate-600 cursor-pointer">Ignorar filas con advertencias y omitir su importación</label>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+          <button type="button" (click)="showBulkModal.set(false)" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">
+            Cancelar
+          </button>
+          @if (bulkParsedRows().length > 0) {
+            <button
+              type="button"
+              (click)="handleExecuteImport()"
+              [disabled]="bulkImporting()"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-5 py-2.5 text-xs font-black text-white transition cursor-pointer"
+            >
+              @if (bulkImporting()) {
+                <svg lucideRefreshCw size="13" class="animate-spin"></svg>
+                Importando...
+              } @else {
+                <svg lucideCheckCircle2 size="13"></svg>
+                Ejecutar Importación
+              }
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>

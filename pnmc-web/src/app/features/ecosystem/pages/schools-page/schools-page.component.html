@@ -1,0 +1,42 @@
+<div class="min-h-screen bg-[#fbfcfb] pb-24 font-nunito text-slate-700">
+  <app-compact-hero
+    backLabel="Ecosistema"
+    current="Escuelas de música"
+    title="Escuelas de Música"
+    subtitle="Directorio especializado"
+    (onBack)="backToEcosystem()"
+  ></app-compact-hero>
+
+  <section class="mx-auto max-w-7xl px-6 pt-8 lg:px-8">
+    <div class="flex flex-wrap gap-3">
+      <button type="button" (click)="openMap()" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-[#00DA5E] px-5 py-3 font-alternate text-[0.65rem] font-bold uppercase tracking-widest text-[#291242] transition hover:bg-[#8BF784]">Ver en el mapa ecosistémico <svg lucideArrowRight [size]="15"></svg></button>
+      <button type="button" (click)="clearFilters()" class="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-3 font-alternate text-[0.65rem] font-bold uppercase tracking-widest text-[#291242] transition hover:bg-slate-50">Restablecer consulta</button>
+    </div>
+  </section>
+
+  <section class="relative mt-6 mx-auto max-w-7xl px-6 lg:px-8">
+    <div class="grid gap-4 rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-xl shadow-[#291242]/10 md:grid-cols-[1.5fr_1fr_auto] md:items-end md:p-6">
+      <label class="block"><span class="mb-2 block font-alternate text-[0.58rem] font-bold uppercase tracking-[0.18em] text-slate-400">Buscar escuela o práctica</span><span class="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3"><svg lucideSearch [size]="17" class="text-[#00A849]"></svg><input [ngModel]="search()" (ngModelChange)="setSearch($event)" type="search" placeholder="Nombre, municipio o práctica musical" class="w-full border-0 bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400" /></span></label>
+      <label class="block"><span class="mb-2 block font-alternate text-[0.58rem] font-bold uppercase tracking-[0.18em] text-slate-400">Departamento</span><select [ngModel]="department()" (ngModelChange)="setDepartment($event)" class="w-full cursor-pointer rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-600 outline-none"><option value="">Todos los departamentos</option>@for (item of departments(); track item) { <option [value]="item">{{ item }}</option> }</select></label>
+      <button type="button" (click)="toggleActive()" class="cursor-pointer rounded-xl border px-4 py-3 font-alternate text-[0.6rem] font-bold uppercase tracking-widest transition" [class]="onlyActive() ? 'border-[#00DA5E]/30 bg-[#00DA5E]/10 text-[#087b3e]' : 'border-slate-200 bg-white text-slate-500'">{{ onlyActive() ? 'Escuelas activas' : 'Todas las escuelas' }}</button>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 pt-12 lg:px-8">
+    <div class="mb-7 flex flex-wrap items-end justify-between gap-5"><div><p class="font-alternate text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00A849]">Lectura territorial</p><h2 class="mt-2 font-gregor text-3xl uppercase text-[#291242] md:text-4xl">Panorama de escuelas</h2></div><p class="max-w-md text-sm leading-relaxed text-slate-500">Los indicadores cambian según los filtros aplicados en el directorio.</p></div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <article class="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><span class="font-alternate text-[0.6rem] font-bold uppercase tracking-widest text-slate-400">Escuelas</span><span class="rounded-xl bg-[#00DA5E]/10 p-2 text-[#00A849]"><svg lucideBuilding2 [size]="18"></svg></span></div><strong class="mt-6 block font-gregor text-4xl text-[#291242]">{{ filteredSchools().length }}</strong><span class="mt-1 block text-xs text-slate-500">registros consultados</span></article>
+      <article class="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><span class="font-alternate text-[0.6rem] font-bold uppercase tracking-widest text-slate-400">Municipios</span><span class="rounded-xl bg-sky-50 p-2 text-sky-600"><svg lucideMapPin [size]="18"></svg></span></div><strong class="mt-6 block font-gregor text-4xl text-[#291242]">{{ municipalities() }}</strong><span class="mt-1 block text-xs text-slate-500">con presencia formativa</span></article>
+      <article class="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><span class="font-alternate text-[0.6rem] font-bold uppercase tracking-widest text-slate-400">Estudiantes</span><span class="rounded-xl bg-violet-50 p-2 text-violet-600"><svg lucideUsersRound [size]="18"></svg></span></div><strong class="mt-6 block font-gregor text-4xl text-[#291242]">{{ totalStudents() }}</strong><span class="mt-1 block text-xs text-slate-500">reportados en los registros</span></article>
+      <article class="rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm"><div class="flex items-center justify-between"><span class="font-alternate text-[0.6rem] font-bold uppercase tracking-widest text-slate-400">Agrupaciones</span><span class="rounded-xl bg-amber-50 p-2 text-amber-600"><svg lucideUsersRound [size]="18"></svg></span></div><strong class="mt-6 block font-gregor text-4xl text-[#291242]">{{ totalGroups() }}</strong><span class="mt-1 block text-xs text-slate-500">procesos vigentes vinculados</span></article>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-7xl px-6 pt-16 lg:px-8">
+    <div class="mb-7 flex flex-wrap items-end justify-between gap-5"><div><p class="font-alternate text-[0.6rem] font-bold uppercase tracking-[0.25em] text-[#00A849]">Directorio público</p><h2 class="mt-2 font-gregor text-3xl uppercase text-[#291242] md:text-4xl">Resultados destacados</h2></div><span class="rounded-full bg-slate-100 px-4 py-2 font-alternate text-[0.6rem] font-bold uppercase tracking-widest text-slate-500">{{ filteredSchools().length }} resultados</span></div>
+    @if (loading()) { <div class="rounded-[1.75rem] bg-white p-12 text-center text-slate-500">Cargando el directorio de escuelas…</div> }
+    @else if (error()) { <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-8 text-amber-800">{{ error() }}</div> }
+    @else if (!filteredSchools().length) { <div class="rounded-[1.75rem] border border-dashed border-slate-200 bg-white p-12 text-center"><p class="font-alternate text-lg font-bold uppercase text-[#291242]">No hay escuelas para estos filtros</p><button type="button" (click)="clearFilters()" class="mt-4 cursor-pointer border-0 bg-transparent font-alternate text-[0.62rem] font-bold uppercase tracking-widest text-[#00A849]">Limpiar filtros</button></div> }
+    @else { <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">@for (school of displayedSchools(); track school.id) { <article class="group rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-[#00DA5E]/40 hover:shadow-lg"><div class="flex items-start justify-between gap-3"><span class="rounded-full bg-[#00DA5E]/10 px-3 py-1 font-alternate text-[0.55rem] font-bold uppercase tracking-widest text-[#087b3e]">{{ school.isActive ? 'Activa' : 'Inactiva' }}</span><span class="text-right text-xs text-slate-400">{{ school.department }}</span></div><h3 class="mt-5 font-alternate text-lg font-bold uppercase leading-snug text-[#291242]">{{ school.name }}</h3><p class="mt-2 flex items-center gap-2 text-sm text-slate-500"><svg lucideMapPin [size]="15" class="text-[#00A849]"></svg>{{ school.municipality || 'Municipio por confirmar' }}</p><div class="mt-5 border-t border-slate-100 pt-4 text-xs leading-relaxed text-slate-500"><p>{{ school.type }}@if (school.coverage) { · {{ school.coverage }} }</p>@if (school.practices) { <p class="mt-2 line-clamp-2"><span class="font-semibold text-slate-600">Prácticas:</span> {{ school.practices }}</p> }</div><button type="button" (click)="openSchool(school.id)" class="mt-6 inline-flex cursor-pointer items-center gap-2 border-0 bg-transparent font-alternate text-[0.58rem] font-bold uppercase tracking-widest text-[#291242] transition group-hover:gap-3 group-hover:text-[#00A849]">Ver detalle <svg lucideArrowRight [size]="14"></svg></button></article> }</div> }
+  </section>
+</div>

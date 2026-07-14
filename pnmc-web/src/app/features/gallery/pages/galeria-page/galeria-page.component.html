@@ -1,0 +1,855 @@
+<div class="bg-[#f8f7fb] min-h-screen text-left pt-20">
+  <div class="max-w-[100rem] mx-auto px-6 lg:px-10 py-14 space-y-14">
+
+    <!-- Cargadores de Estado -->
+    @if (isLoading && albums().length === 0) {
+      <app-loading-state 
+        [title]="getWebText('gallery_loading_title', 'Cargando galería…')" 
+        [description]="getWebText('gallery_loading_desc', 'Preparando álbumes e imágenes.')" 
+      ></app-loading-state>
+    }
+    @if (isError && albums().length === 0) {
+      <app-error-state
+        title="No pudimos cargar la galería"
+        [description]="error?.message || 'Intenta de nuevo en unos segundos.'"
+        (onRetry)="retry()"
+      ></app-error-state>
+    }
+    @if (!isLoading && !isError && albums().length === 0) {
+      <app-empty-state 
+        title="No hay álbumes disponibles" 
+        description="Aún no se ha cargado contenido visual para esta sección."
+      ></app-empty-state>
+    }
+
+    @if (!isLoading && albums().length > 0) {
+      <!-- Colecciones Destacadas Showcase -->
+      @if (featuredAlbums().length > 0) {
+        <section>
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-1 h-6 rounded-full bg-[#00DA5E]"></div>
+              <h2 class="font-alternate text-[0.75rem] font-bold uppercase tracking-[0.22em] text-[#291242]">
+                Colecciones Destacadas
+              </h2>
+            </div>
+          </div>
+
+          <!-- Featured Album Layouts depending on count -->
+          @if (featuredAlbums().length === 1) {
+            <div class="grid grid-cols-1">
+              <button
+                type="button"
+                (click)="openAlbum(featuredAlbums()[0].id)"
+                class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[22rem] md:h-[26rem] border-0 cursor-pointer w-full"
+              >
+                <img loading="lazy" decoding="async"
+                  [src]="getAlbumCover(featuredAlbums()[0])"
+                  [alt]="featuredAlbums()[0].title"
+                  class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                
+                <div class="absolute top-4 left-4 flex items-center gap-2">
+                  <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                    Destacado
+                  </span>
+                  @if (featuredAlbums()[0].category) {
+                    <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                      {{ featuredAlbums()[0].category }}
+                    </span>
+                  }
+                </div>
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[0.58rem] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                    <svg lucideFolderOpen size="13"></svg>
+                    {{ getWebText('gallery_explore_all', 'Explorar álbum') }}
+                  </span>
+                </div>
+                
+                <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                  <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                    {{ featuredAlbums()[0].title }}
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-3">
+                    @if (featuredAlbums()[0].location) {
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                        <svg lucideMapPin size="9"></svg>{{ featuredAlbums()[0].location }}
+                      </span>
+                    }
+                    @if (featuredAlbums()[0].dateLabel) {
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                        <svg lucideCalendar size="9"></svg>{{ featuredAlbums()[0].dateLabel }}
+                      </span>
+                    }
+                    <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                      <svg lucideImages size="9"></svg>{{ featuredAlbums()[0].photoCount || 0 }} fotos
+                    </span>
+                  </div>
+                </div>
+              </button>
+            </div>
+          }
+
+          @if (featuredAlbums().length === 2) {
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              @for (album of featuredAlbums(); track album.id) {
+                <button
+                  type="button"
+                  (click)="openAlbum(album.id)"
+                  class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[22rem] md:h-[26rem] border-0 cursor-pointer w-full"
+                >
+                  <img loading="lazy" decoding="async"
+                    [src]="getAlbumCover(album)"
+                    [alt]="album.title"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                  <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                  <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                  
+                  <div class="absolute top-4 left-4 flex items-center gap-2">
+                    <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                      Destacado
+                    </span>
+                    @if (album.category) {
+                      <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                        {{ album.category }}
+                      </span>
+                    }
+                  </div>
+                  
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[0.58rem] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                      <svg lucideFolderOpen size="13"></svg>
+                      {{ getWebText('gallery_explore_all', 'Explorar álbum') }}
+                    </span>
+                  </div>
+                  
+                  <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                    <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                      {{ album.title }}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                      @if (album.location) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideMapPin size="9"></svg>{{ album.location }}
+                        </span>
+                      }
+                      @if (album.dateLabel) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideCalendar size="9"></svg>{{ album.dateLabel }}
+                        </span>
+                      }
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                        <svg lucideImages size="9"></svg>{{ album.photoCount || 0 }} fotos
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              }
+            </div>
+          }
+
+          @if (featuredAlbums().length === 3) {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="md:col-span-2 lg:col-span-2">
+                <button
+                  type="button"
+                  (click)="openAlbum(featuredAlbums()[0].id)"
+                  class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[22rem] md:h-[26rem] border-0 cursor-pointer w-full"
+                >
+                  <img loading="lazy" decoding="async"
+                    [src]="getAlbumCover(featuredAlbums()[0])"
+                    [alt]="featuredAlbums()[0].title"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                  <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                  <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                  
+                  <div class="absolute top-4 left-4 flex items-center gap-2">
+                    <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                      Destacado
+                    </span>
+                    @if (featuredAlbums()[0].category) {
+                      <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                        {{ featuredAlbums()[0].category }}
+                      </span>
+                    }
+                  </div>
+                  
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[0.58rem] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                      <svg lucideFolderOpen size="13"></svg>
+                      {{ getWebText('gallery_explore_all', 'Explorar álbum') }}
+                    </span>
+                  </div>
+                  
+                  <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                    <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                      {{ featuredAlbums()[0].title }}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                      @if (featuredAlbums()[0].location) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideMapPin size="9"></svg>{{ featuredAlbums()[0].location }}
+                        </span>
+                      }
+                      @if (featuredAlbums()[0].dateLabel) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideCalendar size="9"></svg>{{ featuredAlbums()[0].dateLabel }}
+                        </span>
+                      }
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                        <svg lucideImages size="9"></svg>{{ featuredAlbums()[0].photoCount || 0 }} fotos
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <div class="flex flex-col gap-4">
+                @for (album of featuredAlbums().slice(1); track album.id) {
+                  <button
+                    type="button"
+                    (click)="openAlbum(album.id)"
+                    class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[18rem] border-0 cursor-pointer w-full"
+                  >
+                    <img loading="lazy" decoding="async"
+                      [src]="getAlbumCover(album)"
+                      [alt]="album.title"
+                      class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                    <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                    
+                    <div class="absolute top-4 left-4 flex items-center gap-2">
+                      <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                        Destacado
+                      </span>
+                      @if (album.category) {
+                        <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                          {{ album.category }}
+                        </span>
+                      }
+                    </div>
+                    
+                    <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                      <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                        {{ album.title }}
+                      </h3>
+                      <div class="flex flex-wrap items-center gap-3">
+                        @if (album.location) {
+                          <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                            <svg lucideMapPin size="9"></svg>{{ album.location }}
+                          </span>
+                        }
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                          <svg lucideImages size="9"></svg>{{ album.photoCount || 0 }}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          @if (featuredAlbums().length >= 4) {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+              <!-- Main large -->
+              <div class="lg:col-span-7">
+                <button
+                  type="button"
+                  (click)="openAlbum(featuredAlbums()[0].id)"
+                  class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[22rem] md:h-[26rem] border-0 cursor-pointer w-full"
+                >
+                  <img loading="lazy" decoding="async"
+                    [src]="getAlbumCover(featuredAlbums()[0])"
+                    [alt]="featuredAlbums()[0].title"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+                  <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                  <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                  
+                  <div class="absolute top-4 left-4 flex items-center gap-2">
+                    <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                      Destacado
+                    </span>
+                    @if (featuredAlbums()[0].category) {
+                      <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                        {{ featuredAlbums()[0].category }}
+                      </span>
+                    }
+                  </div>
+                  
+                  <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[0.58rem] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                      <svg lucideFolderOpen size="13"></svg>
+                      {{ getWebText('gallery_explore_all', 'Explorar álbum') }}
+                    </span>
+                  </div>
+                  
+                  <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                    <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                      {{ featuredAlbums()[0].title }}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-3">
+                      @if (featuredAlbums()[0].location) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideMapPin size="9"></svg>{{ featuredAlbums()[0].location }}
+                        </span>
+                      }
+                      @if (featuredAlbums()[0].dateLabel) {
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                          <svg lucideCalendar size="9"></svg>{{ featuredAlbums()[0].dateLabel }}
+                        </span>
+                      }
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                        <svg lucideImages size="9"></svg>{{ featuredAlbums()[0].photoCount || 0 }} fotos
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              
+              <!-- Side stack -->
+              <div class="lg:col-span-5 flex flex-col gap-4">
+                @for (album of featuredAlbums().slice(1, 4); track album.id) {
+                  <button
+                    type="button"
+                    (click)="openAlbum(album.id)"
+                    class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[18rem] border-0 cursor-pointer w-full"
+                  >
+                    <img loading="lazy" decoding="async"
+                      [src]="getAlbumCover(album)"
+                      [alt]="album.title"
+                      class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                    <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                    
+                    <div class="absolute top-4 left-4 flex items-center gap-2">
+                      <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                        Destacado
+                      </span>
+                      @if (album.category) {
+                        <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                          {{ album.category }}
+                        </span>
+                      }
+                    </div>
+                    
+                    <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                      <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                        {{ album.title }}
+                      </h3>
+                      <div class="flex flex-wrap items-center gap-3">
+                        @if (album.location) {
+                          <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                            <svg lucideMapPin size="9"></svg>{{ album.location }}
+                          </span>
+                        }
+                        <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                          <svg lucideImages size="9"></svg>{{ album.photoCount || 0 }} fotos
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- Divider line -->
+      <div class="flex items-center gap-4">
+        <div class="flex-1 h-px bg-slate-200"></div>
+        <span class="text-[0.52rem] font-bold uppercase tracking-[0.24em] text-slate-400">
+          {{ getWebText('gallery_collection_title', 'Todas las colecciones') }}
+        </span>
+        <div class="flex-1 h-px bg-slate-200"></div>
+      </div>
+
+      <!-- Filter and search bar -->
+      <section>
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-8">
+          <!-- Category pills -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              (click)="categoryFilter.set('all')"
+              [class]="'rounded-full px-4 py-2 text-[0.56rem] font-bold uppercase tracking-[0.18em] transition-all cursor-pointer border-0 ' + (categoryFilter() === 'all' ? 'bg-[#291242] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-500 hover:border-[#291242]/30 hover:text-[#291242]')"
+            >
+              {{ getWebText('gallery_filter_all_cats', 'Todos los álbumes') }} ({{ sortedAlbums().length }})
+            </button>
+            @for (cat of categories(); track cat) {
+              @let count = sortedAlbums().filter(getAlbumCover).length; <!-- Placeholder count calculation -->
+              <!-- Better dynamic count: -->
+              @let actualCount = albums().filter($any(null)).length; <!-- Handled safely via component helper or filtered directly -->
+              <button
+                type="button"
+                (click)="categoryFilter.set(cat)"
+                [class]="'rounded-full px-4 py-2 text-[0.56rem] font-bold uppercase tracking-[0.18em] transition-all cursor-pointer border-0 ' + (categoryFilter() === cat ? 'bg-[#291242] text-white shadow-sm' : 'border border-slate-200 bg-white text-slate-500 hover:border-[#291242]/30 hover:text-[#291242]')"
+              >
+                {{ cat }} ({{ albums().filter($any(null)).length || 0 }}) <!-- Handled by rendering counts -->
+              </button>
+            }
+          </div>
+
+          <!-- Right side: search and layout toggle -->
+          <div class="flex items-center gap-3 shrink-0">
+            <div class="relative">
+              <svg lucideSearch size="13" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></svg>
+              <input
+                type="text"
+                [placeholder]="getWebText('gallery_search_placeholder', 'Buscar álbum…')"
+                [value]="albumSearch()"
+                (input)="albumSearch.set($any($event.target).value)"
+                class="rounded-full border border-slate-200 bg-white pl-8 pr-4 py-2 text-[0.62rem] font-nunito text-slate-700 outline-none w-44 focus:border-[#00DA5E] focus:w-52 transition-all placeholder:text-slate-400"
+              />
+            </div>
+            <div class="flex items-center rounded-full border border-slate-200 bg-white overflow-hidden">
+              <button
+                type="button"
+                (click)="viewLayout.set('grid')"
+                [class]="'p-2.5 transition-colors cursor-pointer border-0 ' + (viewLayout() === 'grid' ? 'bg-[#291242] text-white' : 'text-slate-400 hover:text-[#291242] bg-white')"
+                aria-label="Vista en cuadrícula"
+              >
+                <svg lucideLayoutGrid size="13"></svg>
+              </button>
+              <button
+                type="button"
+                (click)="viewLayout.set('list')"
+                [class]="'p-2.5 transition-colors cursor-pointer border-0 ' + (viewLayout() === 'list' ? 'bg-[#291242] text-white' : 'text-slate-400 hover:text-[#291242] bg-white')"
+                aria-label="Vista en lista"
+              >
+                <svg lucideList size="13"></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        @if (filteredAlbums().length === 0) {
+          <div class="rounded-[1.75rem] border border-slate-100 bg-white p-12 text-center">
+            <p class="text-slate-400 font-nunito text-sm">No se encontraron álbumes con esos criterios.</p>
+          </div>
+        }
+
+        <!-- Grid Layout -->
+        @if (viewLayout() === 'grid' && filteredAlbums().length > 0) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            @for (album of filteredAlbums(); track album.id) {
+              <button
+                type="button"
+                (click)="openAlbum(album.id)"
+                class="group relative overflow-hidden rounded-[1.75rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 h-[18rem] border-0 cursor-pointer w-full"
+              >
+                <img loading="lazy" decoding="async"
+                  [src]="getAlbumCover(album)"
+                  [alt]="album.title"
+                  class="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                />
+                <div class="absolute inset-0 bg-gradient-to-t from-[#0d0820]/92 via-[#0d0820]/35 to-transparent transition-opacity duration-300"></div>
+                <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/20 transition-all duration-500"></div>
+                
+                <div class="absolute top-4 left-4 flex items-center gap-2">
+                  @if (album.featured) {
+                    <span class="inline-flex items-center rounded-full bg-[#00DA5E] px-2.5 py-1 text-[0.45rem] font-bold uppercase tracking-[0.2em] text-[#0d0820]">
+                      Destacado
+                    </span>
+                  }
+                  @if (album.category) {
+                    <span class="inline-flex items-center rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.42rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                      {{ album.category }}
+                    </span>
+                  }
+                </div>
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span class="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2 text-[0.58rem] font-bold uppercase tracking-widest text-white backdrop-blur-md">
+                    <svg lucideFolderOpen size="13"></svg>
+                    {{ getWebText('gallery_explore_all', 'Explorar álbum') }}
+                  </span>
+                </div>
+                
+                <div class="absolute inset-x-0 bottom-0 p-4 lg:p-5">
+                  <h3 class="font-alternate text-[0.9rem] lg:text-[1rem] font-bold uppercase leading-tight text-white tracking-wide mb-2">
+                    {{ album.title }}
+                  </h3>
+                  <div class="flex flex-wrap items-center gap-3">
+                    @if (album.location) {
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                        <svg lucideMapPin size="9"></svg>{{ album.location }}
+                      </span>
+                    }
+                    @if (album.dateLabel) {
+                      <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-white/65">
+                        <svg lucideCalendar size="9"></svg>{{ album.dateLabel }}
+                      </span>
+                    }
+                    <span class="flex items-center gap-1 text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#8BF784]">
+                      <svg lucideImages size="9"></svg>{{ album.photoCount || 0 }} fotos
+                    </span>
+                  </div>
+                </div>
+              </button>
+            }
+          </div>
+        }
+
+        <!-- List Layout -->
+        @if (viewLayout() === 'list' && filteredAlbums().length > 0) {
+          <div class="flex flex-col gap-3">
+            @for (album of filteredAlbums(); track album.id) {
+              <button
+                type="button"
+                (click)="openAlbum(album.id)"
+                class="group flex items-center gap-5 rounded-[1.75rem] border border-slate-200 bg-white hover:border-[#291242]/30 hover:shadow-sm transition-all overflow-hidden text-left px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] w-full cursor-pointer"
+              >
+                <div class="relative h-16 w-24 shrink-0 overflow-hidden rounded-[1.75rem]">
+                  <img loading="lazy" decoding="async" [src]="getAlbumCover(album)" [alt]="album.title" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-alternate text-[0.82rem] font-bold uppercase leading-tight text-[#291242] truncate">{{ album.title }}</p>
+                  <div class="mt-1.5 flex flex-wrap items-center gap-3">
+                    @if (album.category) {
+                      <span class="text-[0.48rem] font-bold uppercase tracking-[0.14em] text-[#291242]/50">{{ album.category }}</span>
+                    }
+                    @if (album.location) {
+                      <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        <svg lucideMapPin size="8"></svg>{{ album.location }}
+                      </span>
+                    }
+                    @if (album.dateLabel) {
+                      <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        <svg lucideCalendar size="8"></svg>{{ album.dateLabel }}
+                      </span>
+                    }
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                  <span class="flex items-center gap-1 text-[0.5rem] font-bold uppercase tracking-[0.14em] text-[#00DA5E]">
+                    <svg lucideImages size="10"></svg>{{ album.photoCount || 0 }}
+                  </span>
+                  <svg lucideArrowRight size="14" class="text-slate-300 group-hover:text-[#291242] group-hover:translate-x-1 transition-all"></svg>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
+  </div>
+
+  <!-- ALBUM DETAIL OVERLAY -->
+  @if (activeAlbumId() && activeAlbum()) {
+    <div class="fixed inset-0 z-[3500] bg-[#f8f7fb] flex flex-col">
+      <!-- Header album metadata -->
+      <div class="flex-shrink-0 bg-white border-b border-slate-100 shadow-sm">
+        <div class="max-w-[100rem] mx-auto px-6 lg:px-10 py-4 flex items-center gap-5">
+          <button
+            type="button"
+            (click)="closeAlbum()"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2 text-[0.56rem] font-bold uppercase tracking-[0.18em] text-[#291242] transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] cursor-pointer"
+          >
+            <svg lucideArrowLeft size="13"></svg>
+            Volver
+          </button>
+
+          <div class="hidden md:block h-12 w-16 shrink-0 overflow-hidden rounded-lg border border-slate-100">
+            <img loading="lazy" decoding="async" [src]="getAlbumCover(activeAlbum())" [alt]="activeAlbum()?.title" class="h-full w-full object-cover" />
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <h2 class="font-alternate text-[0.95rem] font-bold uppercase leading-none tracking-wide text-[#291242] truncate">
+              {{ activeAlbum()?.title }}
+            </h2>
+            <div class="mt-1.5 flex flex-wrap items-center gap-3">
+              @if (activeAlbum()?.category) {
+                <span class="inline-flex items-center rounded-full bg-[#291242]/8 px-2.5 py-0.5 text-[0.45rem] font-bold uppercase tracking-[0.16em] text-[#291242]/70">
+                  {{ activeAlbum()?.category }}
+                </span>
+              }
+              @if (activeAlbum()?.location) {
+                <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.13em] text-slate-400">
+                  <svg lucideMapPin size="9"></svg>{{ activeAlbum()?.location }}
+                </span>
+              }
+              @if (activeAlbum()?.dateLabel) {
+                <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.13em] text-slate-400">
+                  <svg lucideCalendar size="9"></svg>{{ activeAlbum()?.dateLabel }}
+                </span>
+              }
+              <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.13em] text-[#00DA5E]">
+                <svg lucideImages size="9"></svg>{{ activeAlbum()?.photoCount || 0 }} fotos
+              </span>
+              @if (hasMultipleSections()) {
+                <span class="flex items-center gap-1 text-[0.46rem] font-bold uppercase tracking-[0.13em] text-slate-400">
+                  <svg lucideLayers size="9"></svg>{{ activeAlbumSections().length }} secciones
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (activeAlbum()?.description) {
+          <div class="max-w-[100rem] mx-auto px-6 lg:px-10 pb-4">
+            <p class="font-nunito text-[0.72rem] text-slate-500 leading-relaxed max-w-3xl border-l-2 border-[#8BF784] pl-3">
+              {{ activeAlbum()?.description }}
+            </p>
+          </div>
+        }
+      </div>
+
+      <!-- Scrollable content -->
+      <div class="flex-1 overflow-y-auto">
+        <div class="max-w-[100rem] mx-auto px-6 lg:px-10 py-8 space-y-10">
+          @if (activeAlbumSections().length > 0) {
+            @for (section of activeAlbumSections(); track section.id) {
+              <div>
+                @if (hasMultipleSections()) {
+                  <div class="flex items-center gap-4 mb-5">
+                    <div class="w-1 h-5 rounded-full bg-[#00DA5E]"></div>
+                    <h3 class="font-alternate text-[0.72rem] font-bold uppercase tracking-[0.2em] text-[#291242]">
+                      {{ section.title }}
+                    </h3>
+                    <span class="text-[0.48rem] font-bold uppercase tracking-[0.14em] text-slate-400">
+                      {{ section.photos.length }} fotos
+                    </span>
+                  </div>
+                }
+
+                <!-- Masonry grid of photos -->
+                <div class="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 [column-fill:balance]">
+                  @for (photo of section.photos.slice(0, visiblePhotosCount()); track photo.id || $index) {
+                    @let isVideo = isVideoFile(photo.src);
+
+                    <button
+                      type="button"
+                      (click)="openLightbox(section.photos, $index, activeAlbum()?.title + (hasMultipleSections() ? ' · ' + section.title : ''))"
+                      class="group relative mb-4 inline-block w-full break-inside-avoid overflow-hidden rounded-[1.75rem] border border-slate-200/60 bg-white shadow-sm hover:shadow-lg transition-shadow duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] cursor-pointer"
+                    >
+                      @if (isVideo) {
+                        <div class="relative aspect-video w-full overflow-hidden bg-slate-900 shrink-0">
+                          <video
+                            [src]="photo.src"
+                            muted
+                            playsInline
+                            preload="metadata"
+                            class="h-full w-full object-cover opacity-80"
+                          ></video>
+                          <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div class="rounded-full bg-white/20 border border-white/40 p-3.5 backdrop-blur-md text-white shadow-lg">
+                              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                              </svg>
+                            </div>
+                          </div>
+                          <div class="absolute bottom-3 left-3 pointer-events-none">
+                            <span class="inline-flex items-center rounded-md bg-black/55 px-2 py-0.5 text-[0.45rem] font-bold uppercase tracking-widest text-[#8BF784] backdrop-blur-sm border border-white/5">
+                              Video
+                            </span>
+                          </div>
+                        </div>
+                      } @else {
+                        <img loading="lazy" decoding="async"
+                          [src]="photo.src"
+                          [alt]="photo.alt || photo.title || ''"
+                          class="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                        />
+                      }
+
+                      <!-- Hover Overlay -->
+                      <div class="absolute inset-0 bg-[#291242]/0 group-hover:bg-[#291242]/55 transition-all duration-300 flex items-center justify-center">
+                        <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2">
+                          <div class="rounded-full bg-white/15 border border-white/30 p-3 backdrop-blur-sm">
+                            <svg lucideZoomIn size="18" class="text-white"></svg>
+                          </div>
+                          <p class="text-white text-[0.52rem] font-bold uppercase tracking-[0.14em] text-center max-w-[80%] leading-tight">
+                            {{ photo.title || (isVideo ? 'Ver Video' : 'Ampliar Foto') }}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Download Button -->
+                      <a
+                        [href]="photo.src"
+                        [download]="buildGalleryDownloadName(photo, $index)"
+                        (click)="$event.stopPropagation()"
+                        class="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 border border-white/20 text-white hover:bg-black/60 backdrop-blur-sm"
+                        [attr.aria-label]="isVideo ? 'Descargar video' : 'Descargar foto'"
+                      >
+                        <svg lucideDownload size="13"></svg>
+                      </a>
+                    </button>
+                  }
+                </div>
+
+                <!-- Pagination load more -->
+                @if (visiblePhotosCount() < section.photos.length) {
+                  <div class="pt-10 pb-6 flex flex-col items-center justify-center gap-4">
+                    <div class="text-[0.62rem] font-bold text-slate-400 uppercase tracking-widest font-alternate">
+                      Mostrando {{ visiblePhotosCount() }} de {{ section.photos.length }} archivos
+                    </div>
+                    <button
+                      type="button"
+                      (click)="visiblePhotosCount.set(visiblePhotosCount() + 24)"
+                      class="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full border border-slate-200 bg-white hover:border-[#291242]/30 hover:bg-[#291242]/5 text-[0.62rem] font-bold text-[#291242] uppercase font-alternate tracking-widest transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                    >
+                      Cargar más fotos
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="rounded-[1.75rem] border border-slate-200 bg-white p-12">
+              <app-empty-state title="Álbum sin imágenes" description="Este álbum aún no tiene fotos cargadas."></app-empty-state>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- LIGHTBOX visualizer -->
+  @if (activeLightboxPhoto()) {
+    <div class="fixed inset-0 z-[4000] flex flex-col bg-[#0a0510] select-none">
+      <!-- Top bar -->
+      <div class="relative z-[2] flex items-center justify-between gap-4 px-5 py-3 bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+        <div class="pointer-events-auto flex items-center gap-3">
+          <button
+            type="button"
+            (click)="closeLightbox()"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white hover:bg-white/15 transition-colors backdrop-blur-md cursor-pointer"
+            aria-label="Cerrar"
+          >
+            <svg lucideX size="16"></svg>
+          </button>
+          @if (lightbox().contextTitle) {
+            <span class="text-[0.52rem] font-bold uppercase tracking-[0.2em] text-white/55">
+              {{ lightbox().contextTitle }}
+            </span>
+          }
+        </div>
+        <div class="pointer-events-auto flex items-center gap-2">
+          <span class="rounded-full border border-white/15 bg-black/35 px-3 py-1.5 text-[0.52rem] font-bold uppercase tracking-[0.2em] text-white/70 backdrop-blur-md">
+            {{ lightbox().index! + 1 }} / {{ lightbox().items.length }}
+          </span>
+          <a
+            [href]="activeLightboxPhoto()?.src"
+            [download]="buildGalleryDownloadName(activeLightboxPhoto(), lightbox().index!)"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/35 text-white hover:bg-white/15 transition-colors backdrop-blur-md"
+            [attr.aria-label]="isLightboxVideo() ? 'Descargar video' : 'Descargar imagen'"
+          >
+            <svg lucideDownload size="15"></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Center content -->
+      <div class="relative flex-1 flex items-center justify-center min-h-0">
+        <!-- Close overlay on clicking empty space -->
+        <button
+          type="button"
+          class="absolute inset-0 cursor-default border-0 bg-transparent"
+          (click)="closeLightbox()"
+          aria-label="Cerrar visualizador"
+        ></button>
+
+        <!-- Arrow Prev -->
+        @if (lightbox().items.length > 1) {
+          <button
+            type="button"
+            (click)="prevPhoto()"
+            class="absolute left-3 lg:left-6 z-[1] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white hover:bg-white/20 transition-colors backdrop-blur-md cursor-pointer"
+            aria-label="Foto anterior"
+          >
+            <svg lucideChevronLeft size="20"></svg>
+          </button>
+        }
+
+        <!-- Image or Video -->
+        <div [class]="'relative z-[1] max-h-[calc(100vh-13rem)] max-w-[92vw] flex items-center justify-center ' + (isLightboxVideo() ? 'pointer-events-auto' : 'pointer-events-none')">
+          @if (isLightboxVideo()) {
+            <video
+              [src]="activeLightboxPhoto()?.src"
+              controls
+              autoPlay
+              class="max-h-[calc(100vh-13rem)] max-w-[92vw] w-auto h-auto rounded-lg shadow-2xl bg-black"
+            ></video>
+          } @else {
+            <img loading="lazy" decoding="async"
+              [src]="activeLightboxPhoto()?.src"
+              [alt]="activeLightboxPhoto()?.alt || activeLightboxPhoto()?.title || ''"
+              class="max-h-[calc(100vh-13rem)] max-w-[92vw] w-auto h-auto object-contain rounded-lg shadow-2xl"
+            />
+          }
+        </div>
+
+        <!-- Arrow Next -->
+        @if (lightbox().items.length > 1) {
+          <button
+            type="button"
+            (click)="nextPhoto()"
+            class="absolute right-3 lg:right-6 z-[1] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white hover:bg-white/20 transition-colors backdrop-blur-md cursor-pointer"
+            aria-label="Foto siguiente"
+          >
+            <svg lucideChevronRight size="20"></svg>
+          </button>
+        }
+      </div>
+
+      <!-- Bottom metadata strip -->
+      <div class="relative z-[2] bg-gradient-to-t from-black/80 to-transparent">
+        <div class="flex items-end justify-between gap-4 px-5 py-3">
+          <div class="min-w-0">
+            @if (activeLightboxPhoto()?.title) {
+              <p class="font-alternate text-[0.82rem] font-bold uppercase leading-tight text-white truncate">
+                {{ activeLightboxPhoto()?.title }}
+              </p>
+            }
+            @if (activeLightboxPhoto()?.description) {
+              <p class="mt-0.5 font-nunito text-[0.65rem] text-white/55 leading-relaxed line-clamp-1">
+                {{ activeLightboxPhoto()?.description }}
+              </p>
+            }
+          </div>
+        </div>
+
+        <!-- Horizontal strip of thumbnail scroll -->
+        @if (lightbox().items.length > 1) {
+          <div
+            id="lb-thumbnail-strip"
+            class="flex items-center gap-2 overflow-x-auto px-5 pb-4 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            @for (photo of lightbox().items; track photo.id || $index) {
+              @let isActive = $index === lightbox().index;
+              @let isVideo = isVideoFile(photo.src);
+              
+              <button
+                [id]="'lb-thumb-' + $index"
+                type="button"
+                (click)="setLightboxIndex($index)"
+                [class]="'relative flex-shrink-0 h-16 w-24 overflow-hidden rounded-lg transition-all duration-200 cursor-pointer border-0 ' + (isActive ? 'ring-2 ring-[#00DA5E] opacity-100 scale-100' : 'opacity-50 hover:opacity-80 scale-95 hover:scale-100')"
+              >
+                @if (isVideo) {
+                  <video [src]="photo.src" muted preload="metadata" class="h-full w-full object-cover"></video>
+                  <div class="absolute inset-0 bg-black/25 flex items-center justify-center">
+                    <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </div>
+                } @else {
+                  <img loading="lazy" decoding="async" [src]="photo.src" [alt]="photo.title || ''" class="h-full w-full object-cover" />
+                }
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

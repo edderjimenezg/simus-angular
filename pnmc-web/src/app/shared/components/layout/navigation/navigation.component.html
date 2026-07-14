@@ -1,0 +1,201 @@
+<nav
+  [ngClass]="getNavClass()"
+  class="fixed w-full z-[3000] transition-all duration-300 px-6 lg:px-12"
+  aria-label="Navegación principal"
+>
+  <div class="max-w-[100rem] mx-auto flex justify-between items-center h-12">
+    <div class="flex items-center gap-10 min-w-0">
+      <button
+        type="button"
+        class="flex items-center gap-4 cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-lg border-0 bg-transparent"
+        (click)="onPageChange('home')"
+        aria-label="Ir al inicio"
+      >
+        <img src="/assets/branding/pnmc-blanco.png" class="h-10 sm:h-12 md:h-14 lg:h-16 w-auto object-contain transition-all" alt="PNMC" />
+      </button>
+
+      <div class="hidden lg:flex items-center gap-8">
+        @for (link of primaryNavigationLinks(); track link.id) {
+          <div
+            class="relative"
+            (mouseenter)="isDropdownLink(link.id) ? setActiveNavDropdown(link.id) : null"
+            (mouseleave)="isDropdownLink(link.id) ? setActiveNavDropdown(null) : null"
+            (focusin)="onDropdownFocusIn(link.id)"
+            (focusout)="onDropdownFocusOut(link.id, $event)"
+          >
+            <button
+              type="button"
+              (click)="onPageChange(link.id)"
+              class="inline-flex items-center gap-2 text-[0.7rem] font-bold uppercase font-alternate tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent cursor-pointer"
+              [ngClass]="getPrimaryLinkClass(link.id)"
+              [attr.aria-expanded]="isDropdownLink(link.id) ? (activeNavDropdown() === link.id) : null"
+            >
+              {{ link.name }}
+              @if (isDropdownLink(link.id)) {
+                <svg lucideChevronDown [size]="13" class="transition-transform" [class.rotate-180]="activeNavDropdown() === link.id"></svg>
+              }
+            </button>
+
+            @if (link.id === 'ejes' && activeNavDropdown() === link.id) {
+              <div class="absolute left-0 top-full w-[min(66rem,calc(100vw-4rem))] pt-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div class="overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl p-2">
+                  <div class="grid grid-cols-[18rem_minmax(0,1fr)] gap-2">
+                    <div class="bg-slate-50/70 rounded-[1.75rem] p-3 space-y-1">
+                      @for (group of ejeNavigationGroups(); track group.id) {
+                        <button
+                          type="button"
+                          (mouseenter)="setActiveEjeMenuId(group.id)"
+                          (focus)="setActiveEjeMenuId(group.id)"
+                          (click)="onNavigateToPageSection(link.id, group.sectionId)"
+                          class="flex w-full items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left text-[0.65rem] font-bold uppercase tracking-[0.18em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 border-0 cursor-pointer"
+                          [ngClass]="getEjeGroupClass(group.id)"
+                        >
+                          <span>{{ group.name }}</span>
+                          <svg lucideChevronRight [size]="14" class="shrink-0 transition-transform" [class.translate-x-1]="activeEjeGroup().id === group.id"></svg>
+                        </button>
+                      }
+                    </div>
+
+                    <div class="p-6 pl-4 flex flex-col justify-center">
+                      <div class="pb-5">
+                        <div class="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-slate-500">
+                          {{ getWebText('nav_components_title', 'Componentes del eje') }}
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        @for (component of activeEjeGroup().components; track component.id) {
+                          <button
+                            type="button"
+                            (click)="onNavigateToComponentFromMenu(component.id)"
+                            class="group flex min-h-[4.5rem] w-full items-center justify-between gap-4 rounded-[1.75rem] border border-slate-100 bg-white px-5 py-3 text-left text-[0.65rem] font-bold tracking-[0.05em] text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#00DA5E]/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 cursor-pointer"
+                          >
+                            <span class="line-clamp-2 leading-relaxed group-hover:text-[#291242]">{{ component.name }}</span>
+                            <div class="flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 group-hover:bg-[#00DA5E]/10 shrink-0 transition-colors">
+                              <svg lucideArrowUpRight [size]="14" class="text-slate-500 group-hover:text-[#00DA5E] transition-colors"></svg>
+                            </div>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (link.id === 'ecosistema' && activeNavDropdown() === link.id) {
+              <div class="absolute left-0 top-full w-[min(57rem,calc(100vw-4rem))] pt-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div class="overflow-hidden rounded-[2.5rem] border border-slate-200/80 bg-white/95 p-7 shadow-2xl backdrop-blur-xl">
+                  <div class="mb-5 flex items-end justify-between gap-8">
+                    <div>
+                      <p class="font-alternate text-[0.6rem] font-bold uppercase tracking-[0.24em] text-[#00A849]">Consulta especializada</p>
+                      <p class="mt-1 font-alternate text-xl font-bold uppercase tracking-tight text-[#291242]">Ecosistema musical</p>
+                    </div>
+                    <button type="button" (click)="onNavigateToPath('ecosistema')" class="border-0 bg-transparent font-alternate text-[0.62rem] font-bold uppercase tracking-widest text-slate-500 hover:text-[#00A849] cursor-pointer">Ver todo el ecosistema →</button>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    @for (item of ecosystemMenuItems; track item.page) {
+                      <button type="button" (click)="onNavigateToPath(item.page)" class="group rounded-2xl border border-slate-100 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-[#00DA5E]/50 hover:shadow-md cursor-pointer">
+                        <span class="block font-alternate text-[0.65rem] font-bold uppercase leading-snug tracking-[0.08em] text-[#291242] group-hover:text-[#00A849]">{{ item.label }}</span>
+                        <span class="mt-2 block text-xs leading-relaxed text-slate-500">{{ item.detail }}</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (link.id === 'simus' && activeNavDropdown() === link.id) {
+              <div class="absolute right-0 top-full w-[25rem] pt-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div class="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/95 p-3 shadow-2xl backdrop-blur-xl">
+                  @for (item of simusMenuItems; track item.page) {
+                    <button type="button" (click)="onNavigateToPath(item.page)" class="group flex w-full items-start gap-4 rounded-[1.75rem] p-4 text-left transition-all hover:bg-slate-50 cursor-pointer">
+                      <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#00DA5E]"></span>
+                      <span><span class="block font-alternate text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#291242]">{{ item.label }}</span><span class="mt-1 block text-xs leading-relaxed text-slate-500">{{ item.detail }}</span></span>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-3">
+      @for (link of featuredNavigationLinks(); track link.id) {
+        <button
+          type="button"
+          (click)="onPageChange(link.id)"
+          class="px-5 py-3 rounded-xl text-[0.72rem] font-bold uppercase font-alternate tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] border-0 cursor-pointer"
+          [ngClass]="getFeaturedLinkClass(link.id)"
+        >
+          {{ link.name }}
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="lg:hidden text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent"
+      (click)="toggleMobileMenu()"
+      [attr.aria-expanded]="mobileMenuOpen()"
+      [attr.aria-label]="mobileMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+    >
+      @if (mobileMenuOpen()) {
+        <svg lucideX [size]="28"></svg>
+      } @else {
+        <svg lucideMenu [size]="28"></svg>
+      }
+    </button>
+  </div>
+
+  @if (mobileMenuOpen()) {
+    <div class="lg:hidden absolute top-full left-0 w-full max-h-[calc(100vh-3.5rem)] overflow-y-auto bg-[#291242] border-t border-white/10 p-8 flex flex-col gap-2 shadow-2xl animate-in slide-in-from-top duration-300">
+      @for (link of resolvedNavigationLinks(); track link.id) {
+        @if (isDropdownLink(link.id)) {
+          <div class="border-b border-white/5 pb-2">
+            <button
+              type="button"
+              (click)="toggleMobileSection(link.id)"
+              class="flex w-full items-center justify-between gap-4 py-2 text-[0.9rem] font-bold uppercase font-alternate text-left tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent cursor-pointer"
+              [ngClass]="getMobileLinkClass(link.id)"
+              [attr.aria-expanded]="mobileExpandedSection() === link.id"
+            >
+              <span>{{ link.name }}</span>
+              <svg lucideChevronDown [size]="18" class="shrink-0 transition-transform" [class.rotate-180]="mobileExpandedSection() === link.id"></svg>
+            </button>
+            @if (mobileExpandedSection() === link.id) {
+              <div class="mt-1 flex flex-col gap-1 pl-3 pb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <button
+                  type="button"
+                  (click)="onPageChange(link.id); toggleMobileMenu()"
+                  class="py-2 text-left text-[0.7rem] font-bold uppercase font-alternate tracking-widest text-white/50 hover:text-[#00DA5E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent cursor-pointer"
+                >
+                  Ver todo →
+                </button>
+                @for (sub of mobileSubItems(link.id); track sub.label) {
+                  <button
+                    type="button"
+                    (click)="sub.action(); toggleMobileMenu()"
+                    class="py-2 text-left text-[0.78rem] font-semibold font-nunito tracking-wide text-white/75 hover:text-[#00DA5E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent cursor-pointer"
+                  >
+                    {{ sub.label }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <button
+            type="button"
+            (click)="onPageChange(link.id); toggleMobileMenu()"
+            class="border-b border-white/5 py-3 text-[0.9rem] font-bold uppercase font-alternate text-left tracking-widest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00DA5E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#291242] rounded-md border-0 bg-transparent cursor-pointer"
+            [ngClass]="getMobileLinkClass(link.id)"
+          >
+            {{ link.name }}
+          </button>
+        }
+      }
+    </div>
+  }
+</nav>

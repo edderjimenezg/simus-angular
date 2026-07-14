@@ -1,0 +1,1028 @@
+<div class="min-h-screen bg-slate-50 flex flex-col font-nunito">
+  <header class="bg-[#291242] text-white px-6 py-4 flex items-center justify-between shadow-lg sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-xl bg-[#00DA5E]/15 flex items-center justify-center shrink-0 border border-[#00DA5E]/30">
+        <svg lucideShieldCheck class="text-[#00DA5E] h-5.5 w-5.5"></svg>
+      </div>
+      <div>
+        <h1 class="font-alternate text-sm uppercase tracking-widest font-black text-[#00DA5E]">PNMC Colaboradores</h1>
+        <p class="text-[0.62rem] text-white/60 font-semibold">Portal de registro y caracterización territorial</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <!-- Notifications dropdown -->
+      <div class="relative">
+        <button
+          type="button"
+          (click)="showNotifications.set(!showNotifications())"
+          class="relative rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 text-xs font-bold text-white transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <svg lucideBell class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+          <span class="hidden sm:inline">Alertas</span>
+          @if (unreadNotificationsCount > 0) {
+            <span class="inline-flex min-w-[1.1rem] items-center justify-center rounded-full bg-[#00DA5E] px-1.5 py-0.5 text-[0.6rem] font-black text-[#291242]">
+              {{ unreadNotificationsCount }}
+            </span>
+          }
+        </button>
+
+        @if (showNotifications()) {
+          <div class="absolute right-0 top-[calc(100%+0.6rem)] w-[22rem] rounded-2xl border border-white/10 bg-[#1f0d32] p-3 shadow-2xl z-[6000]">
+            <div class="mb-2 flex items-center justify-between">
+              <p class="text-[0.62rem] font-black uppercase tracking-widest text-[#00DA5E]">Notificaciones</p>
+              <span class="text-[0.62rem] text-white/50">{{ myNotifications.length }}</span>
+            </div>
+            <div class="max-h-72 space-y-2 overflow-y-auto pr-1">
+              @for (item of myNotifications; track item.id) {
+                <button
+                  type="button"
+                  (click)="showNotifications.set(false)"
+                  class="block w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-left hover:bg-white/10 transition cursor-pointer"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-xs font-bold text-white">{{ item.title }}</p>
+                      <p class="mt-1 text-[0.7rem] leading-relaxed text-white/70">{{ item.message }}</p>
+                    </div>
+                    @if (!item.read) {
+                      <span class="mt-1 h-2 w-2 rounded-full bg-[#00DA5E] shrink-0"></span>
+                    }
+                  </div>
+                </button>
+              } @empty {
+                <p class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60">Todavía no tienes alertas asociadas a tus procesos.</p>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- User avatar -->
+      <div class="flex items-center gap-2">
+        <div class="h-8 w-8 rounded-full flex items-center justify-center shrink-0 border border-white/10" [ngClass]="getAvatarColor(session?.fullName)">
+          <span class="text-[0.65rem] font-black text-white">{{ getInitials(session?.fullName) }}</span>
+        </div>
+        <div class="hidden sm:block text-left">
+          <p class="text-xs font-bold leading-tight">{{ session?.fullName }}</p>
+          <p class="text-[0.58rem] text-[#00DA5E] uppercase tracking-wider font-bold">Colaborador Externo</p>
+        </div>
+      </div>
+
+      <!-- Security / Change Password modal button -->
+      <button
+        type="button"
+        (click)="openPasswordModal()"
+        class="rounded-lg border border-white/20 bg-white/5 hover:bg-white/10 px-2.5 py-1.5 text-xs font-bold text-white transition flex items-center gap-1.5 cursor-pointer"
+      >
+        <svg lucideLock class="text-[#00DA5E] h-3 w-3"></svg>
+        <span class="hidden sm:inline">Seguridad</span>
+      </button>
+
+      <!-- Logout button -->
+      <button
+        type="button"
+        (click)="onLogout.emit()"
+        class="rounded-lg bg-white/10 hover:bg-white/15 px-3 py-1.5 text-xs font-bold text-white transition flex items-center gap-1.5 cursor-pointer"
+      >
+        <svg lucideLogOut class="text-[#00DA5E] h-3 w-3"></svg>
+        Salir
+      </button>
+    </div>
+  </header>
+
+  <div class="flex-1 max-w-[70rem] w-full mx-auto px-4 py-8 grid gap-8">
+    
+    <!-- Tab navigation -->
+    <div class="flex border-b border-slate-200 gap-6">
+      <button
+        type="button"
+        (click)="activeTab.set('home'); showProcessForm.set(false);"
+        class="py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer"
+        [ngClass]="activeTab() === 'home' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Mi Panel
+      </button>
+      <button
+        type="button"
+        (click)="activeTab.set('characterization'); showProcessForm.set(false);"
+        class="py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer"
+        [ngClass]="activeTab() === 'characterization' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Caracterización Organizacional
+      </button>
+      <button
+        type="button"
+        (click)="activeTab.set('profile'); showProcessForm.set(false);"
+        class="py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition cursor-pointer"
+        [ngClass]="activeTab() === 'profile' ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+      >
+        Editar Perfil
+      </button>
+    </div>
+
+    <!-- Active Tab Content -->
+    @if (activeTab() === 'home' && !showProcessForm()) {
+      <div class="space-y-6 animate-fade-in">
+        
+        <!-- Live Scan / Scanning Overlay -->
+        @if (isScanning()) {
+          <div class="rounded-2xl border border-violet-200 bg-white p-8 text-center space-y-6 shadow-xl relative overflow-hidden flex flex-col items-center justify-center min-h-[300px]">
+            <div class="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-[#00DA5E]/5 to-violet-500/5 animate-pulse"></div>
+            <div class="h-16 w-16 bg-violet-100 rounded-full flex items-center justify-center border border-violet-200 shadow-md relative z-10 animate-spin">
+              <svg lucideRefreshCw class="text-violet-600 h-7 w-7"></svg>
+            </div>
+            <div class="space-y-2 relative z-10 max-w-md">
+              <h3 class="font-alternate text-lg uppercase font-bold text-[#291242]">Escaneo de Registros Históricos PNMC</h3>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Cruzando los datos de su organización en <strong class="text-slate-800">{{ charForm().municipality }}, {{ charForm().department }}</strong> con la base de datos nacional y los mapeos previos del Plan Nacional de Música para la Convivencia...
+              </p>
+            </div>
+            <div class="w-full max-w-xs h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 relative z-10">
+              <div class="h-full bg-gradient-to-r from-violet-600 to-[#00DA5E] rounded-full transition-all duration-1000" style="width: 75%;"></div>
+            </div>
+            <p class="text-[0.62rem] font-bold text-violet-500 uppercase tracking-widest relative z-10">Buscando posibles coincidencias...</p>
+          </div>
+        } @else {
+          <!-- Main view -->
+          <div class="grid md:grid-cols-2 gap-6">
+            <div class="rounded-xl border border-slate-200 bg-white p-6 flex flex-col justify-between shadow-xs">
+              <div class="space-y-3">
+                <div class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-[0.62rem] font-bold uppercase tracking-wider text-slate-500 border border-slate-200">
+                  Perfil Colaborador
+                </div>
+                <h3 class="font-alternate text-lg uppercase font-bold text-slate-900">{{ session?.fullName }}</h3>
+                <p class="text-xs text-slate-400">{{ session?.email }}</p>
+              </div>
+              <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div class="space-y-0.5">
+                  <p class="text-[0.55rem] font-black uppercase tracking-widest text-slate-400">Estado Ficha</p>
+                  <p class="text-xs font-bold text-slate-700">
+                    @if (characterizationStatus() === 'pendiente') { Pendiente de rellenar }
+                    @if (characterizationStatus() === 'en_evaluacion') { En evaluación por administradores }
+                    @if (characterizationStatus() === 'ajustes_solicitados') { Ajustes solicitados por el equipo }
+                    @if (characterizationStatus() === 'aprobado') { Ficha verificada y aprobada }
+                  </p>
+                </div>
+                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider border" [ngClass]="statusPillClass(characterizationStatus())">
+                  {{ statusLabel(characterizationStatus()) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Ficha Warning/Approved status -->
+            @if (characterizationStatus() === 'pendiente') {
+              <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-6 flex flex-col justify-between shadow-xs animate-fade-in">
+                <div class="space-y-2">
+                  <h3 class="text-sm font-bold text-amber-800">Complete su Caracterización</h3>
+                  <p class="text-xs text-amber-700 leading-relaxed">
+                    Para asegurar la validez de los procesos que registre, es prioritario que complete la ficha de caracterización con los datos de su organización.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  (click)="activeTab.set('characterization')"
+                  class="mt-6 self-start inline-flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 py-2.5 text-xs font-black text-white transition shadow-xs cursor-pointer"
+                >
+                  Llenar caracterización
+                  <svg lucideChevronRight class="h-3.5 w-3.5"></svg>
+                </button>
+              </div>
+            }
+
+            @if (characterizationStatus() === 'aprobado' && potentialMatches().length === 0) {
+              <div class="rounded-xl border border-emerald-200 bg-emerald-50/20 p-6 flex flex-col justify-between shadow-xs animate-fade-in">
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <svg lucideCheckCircle2 class="text-emerald-600 h-4.5 w-4.5"></svg>
+                    <h3 class="text-sm font-bold text-emerald-800">Ficha Técnica Aprobada</h3>
+                  </div>
+                  <p class="text-xs text-emerald-700 leading-relaxed">
+                    Su caracterización ha sido validada con éxito. Ya puede registrar nuevos procesos ecosistémicos de su región de manera ilimitada en el Mapa.
+                  </p>
+                </div>
+                <div class="text-[0.62rem] font-bold text-emerald-600 uppercase tracking-wider">Escaneo del territorio finalizado sin duplicados pendientes.</div>
+              </div>
+            }
+          </div>
+
+          <!-- historical claims inbox -->
+          @if (potentialMatches().length > 0) {
+            <div class="rounded-2xl border border-[#00DA5E]/30 bg-[#291242]/5 backdrop-blur p-6 space-y-4 animate-fade-in shadow-xs">
+              <div class="flex items-center gap-3">
+                <div class="h-8 w-8 rounded-lg bg-[#00DA5E]/15 flex items-center justify-center shrink-0 border border-[#00DA5E]/30">
+                  <svg lucideAlertCircle class="text-[#00DA5E] h-4.5 w-4.5"></svg>
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900">Bandeja de Coincidencias y Reclamaciones Históricas</h3>
+                  <p class="text-xs text-slate-500 mt-0.5">
+                    Encontramos estos registros preexistentes en la base de datos nacional que coinciden con su ubicación geográfica ({{ charForm().municipality }}, {{ charForm().department }}). ¿Alguno le pertenece a su organización para reclamar su autoría?
+                  </p>
+                </div>
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-4">
+                @for (match of potentialMatches(); track match.id) {
+                  <div class="rounded-xl border border-slate-200 bg-white p-4 flex flex-col justify-between hover:shadow-md hover:border-violet-300 transition duration-300">
+                    <div class="space-y-2">
+                      <div class="flex items-start justify-between gap-2">
+                        <span class="rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 text-[0.6rem] font-bold text-violet-700 uppercase tracking-wider">
+                          {{ match.type === 'musicSchools' ? 'Escuela de Música' : 'Festival' }}
+                        </span>
+                        <span class="text-[0.6rem] text-slate-400 font-mono">{{ match.source }}</span>
+                      </div>
+                      <h4 class="font-alternate text-sm font-bold text-slate-900 leading-snug">{{ match.title }}</h4>
+                      <p class="text-[0.7rem] text-slate-500 leading-relaxed line-clamp-2">{{ match.description }}</p>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        (click)="previewMatch.set(match)"
+                        class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[0.68rem] font-bold text-slate-600 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer"
+                      >
+                        Previsualizar
+                      </button>
+                      <button
+                        type="button"
+                        (click)="handleClaimMatch(match)"
+                        class="rounded-lg bg-[#00DA5E] hover:bg-[#00c454] px-2.5 py-1.5 text-[0.68rem] font-black text-slate-950 transition cursor-pointer"
+                      >
+                        Reclamar / Vincular
+                      </button>
+                      <button
+                        type="button"
+                        (click)="handleDeclineMatch(match.id)"
+                        class="rounded-lg border border-slate-100 hover:bg-slate-50 px-2 py-1.5 text-[0.68rem] font-bold text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                      >
+                        Ignorar
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Registered processes list -->
+          <div class="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+            <div class="border-b border-slate-100 px-5 py-4 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 class="text-sm font-black text-slate-900">Mis Procesos Culturales</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Listado de escuelas, festivales o luterías registradas por usted</p>
+              </div>
+              <button
+                type="button"
+                (click)="showProcessForm.set(true)"
+                class="inline-flex items-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-4 py-2.5 text-xs font-black text-white transition shadow-md cursor-pointer"
+              >
+                <svg lucidePlus class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+                Registrar Proceso
+              </button>
+            </div>
+
+            <div class="divide-y divide-slate-100">
+              @for (proc of myProcesses(); track proc.id) {
+                <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-4 hover:bg-slate-50/50 transition">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm font-bold text-slate-900">{{ proc.title }}</p>
+                      <span class="inline-flex rounded-full px-2 py-0.5 text-[0.58rem] font-black uppercase tracking-wide border" [ngClass]="statusPillClass(proc.status)">
+                        {{ statusLabel(proc.status) }}
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      @if (proc.type === 'festivals') { Festival }
+                      @if (proc.type === 'musicSchools') { Escuela de Música }
+                      @if (proc.type === 'spacesInfrastructure') { Lutier }
+                      · {{ proc.department }} / {{ proc.municipality }} · Actualizado: {{ proc.updatedAt }}
+                    </p>
+                  </div>
+                  @if (proc.status === 'en_revision') {
+                    <span class="text-[0.68rem] text-slate-400 italic">En evaluación. Esperando respuesta del equipo.</span>
+                  } @else {
+                    <button
+                      type="button"
+                      (click)="selectedProcessType.set(proc.type); editingProcessId.set(proc.id); procForm.set({ name: proc.title, description: proc.description || '', department: proc.department, municipality: proc.municipality, organizer: session.fullName, contactEmail: session.email, contactPhone: proc.contactPhone || '' }); showProcessForm.set(true);"
+                      class="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer"
+                    >
+                      {{ proc.status === 'ajustes_solicitados' ? 'Corregir y reenviar' : 'Editar' }}
+                    </button>
+                  }
+                </div>
+              } @empty {
+                <div class="py-12 text-center text-slate-400 text-sm">
+                  No ha registrado ningún proceso aún.
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+
+    <!-- Tab: Caracterización Wizard -->
+    @if (activeTab() === 'characterization' && !showProcessForm()) {
+      <form (submit)="handleCharacterizationSubmit($event)" class="rounded-xl border border-slate-200 bg-white overflow-hidden animate-fade-in shadow-xs">
+        <div class="border-b border-slate-100 bg-[#291242] text-white px-5 py-4">
+          <h3 class="font-alternate text-sm uppercase tracking-wider font-bold">Caracterización de Organizaciones</h3>
+          <p class="text-xs text-white/60 mt-0.5">Wizard interactivo de registro de actores PNMC</p>
+        </div>
+
+        <div class="flex border-b border-slate-100 bg-slate-50/50">
+          @for (stepNum of [1, 2, 3]; track stepNum) {
+            <div
+              class="flex-1 py-3 text-center text-xs font-bold border-b-2 transition"
+              [ngClass]="wizardStep() === stepNum ? 'border-[#291242] text-[#291242]' : 'border-transparent text-slate-400'"
+            >
+              Paso {{ stepNum }}: 
+              @if (stepNum === 1) { Identidad }
+              @if (stepNum === 2) { Contacto }
+              @if (stepNum === 3) { Territorio }
+            </div>
+          }
+        </div>
+
+        <div class="p-6 space-y-5">
+          <!-- Step 1: Identidad -->
+          @if (wizardStep() === 1) {
+            <div class="space-y-4 animate-fade-in">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-name">
+                  Razón Social / Nombre de Organización <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="char-name"
+                  type="text"
+                  name="charName"
+                  [(ngModel)]="charForm().legalName"
+                  required
+                  placeholder="Ej. Corporación Cantos de la Tierra"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-nit">
+                  NIT / Documento Identidad <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="char-nit"
+                  type="text"
+                  name="charNit"
+                  [(ngModel)]="charForm().nit"
+                  required
+                  placeholder="Ej. 900.123.456-7"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-desc">
+                  Descripción de Actividad Cultural <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="char-desc"
+                  name="charDesc"
+                  [(ngModel)]="charForm().description"
+                  required
+                  rows="4"
+                  placeholder="Describa brevemente la labor de su organización en el fomento cultural de la región..."
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden resize-none"
+                ></textarea>
+              </div>
+            </div>
+          }
+
+          <!-- Step 2: Contacto -->
+          @if (wizardStep() === 2) {
+            <div class="space-y-4 animate-fade-in">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-email">
+                  Correo de Contacto <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="char-email"
+                  type="email"
+                  name="charEmail"
+                  [(ngModel)]="charForm().email"
+                  required
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-phone">
+                  Teléfono de Contacto <span class="text-red-500">*</span>
+                </label>
+                <input
+                  id="char-phone"
+                  type="text"
+                  name="charPhone"
+                  [(ngModel)]="charForm().phone"
+                  required
+                  placeholder="Ej. 312 456 7890"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                />
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-web">Sitio Web</label>
+                  <input
+                    id="char-web"
+                    type="url"
+                    name="charWeb"
+                    [(ngModel)]="charForm().website"
+                    placeholder="https://www.organizacion.org"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-insta">Instagram</label>
+                  <input
+                    id="char-insta"
+                    type="text"
+                    name="charInsta"
+                    [(ngModel)]="charForm().instagram"
+                    placeholder="@organizacion"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                  />
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Step 3: Territorio -->
+          @if (wizardStep() === 3) {
+            <div class="space-y-4 animate-fade-in">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-dept">
+                  Departamento <span class="text-red-500">*</span>
+                </label>
+                <select
+                  id="char-dept"
+                  name="charDept"
+                  [(ngModel)]="charForm().department"
+                  (change)="charForm().municipality = ''"
+                  required
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                >
+                  <option value="">Seleccione departamento</option>
+                  @for (d of departments; track d) {
+                    <option [value]="d">{{ d }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="char-muni">
+                  Municipio <span class="text-red-500">*</span>
+                </label>
+                <select
+                  id="char-muni"
+                  name="charMuni"
+                  [(ngModel)]="charForm().municipality"
+                  required
+                  [disabled]="!charForm().department"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden disabled:opacity-50"
+                >
+                  <option value="">Seleccione municipio</option>
+                  @for (m of municipalities; track m) {
+                    <option [value]="m">{{ m }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+
+          <!-- Wizard Actions -->
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+            @if (wizardStep() > 1) {
+              <button
+                type="button"
+                (click)="wizardStep.set(wizardStep() - 1)"
+                class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer"
+              >
+                Atrás
+              </button>
+            } @else {
+              <div></div>
+            }
+
+            @if (wizardStep() < 3) {
+              <button
+                type="button"
+                (click)="wizardStep.set(wizardStep() + 1)"
+                [disabled]="(wizardStep() === 1 && (!charForm().legalName || !charForm().nit || !charForm().description)) || (wizardStep() === 2 && (!charForm().email || !charForm().phone))"
+                class="rounded-xl bg-[#291242] hover:bg-[#3d1a63] disabled:opacity-50 px-5 py-2.5 text-xs font-bold text-white transition cursor-pointer"
+              >
+                Siguiente
+              </button>
+            } @else {
+              <button
+                type="submit"
+                [disabled]="!charForm().department || !charForm().municipality"
+                class="inline-flex items-center gap-1.5 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] disabled:opacity-50 px-5 py-2.5 text-xs font-black text-slate-950 transition font-alternate uppercase cursor-pointer"
+              >
+                <svg lucideCheckCircle2 class="h-4 w-4"></svg>
+                Enviar a evaluación
+              </button>
+            }
+          </div>
+        </div>
+      </form>
+    }
+
+    <!-- Process registration Form -->
+    @if (showProcessForm()) {
+      <form (submit)="handleCreateProcess($event)" class="rounded-xl border border-slate-200 bg-white overflow-hidden animate-fade-in shadow-xs">
+        <div class="border-b border-slate-100 bg-[#291242] text-white px-5 py-4">
+          <h3 class="font-alternate text-sm uppercase tracking-wider font-bold">Registrar Nuevo Proceso</h3>
+          <p class="text-xs text-white/60 mt-0.5">Ingrese los datos básicos del proceso para ser evaluado por el equipo</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+          @if (currentProcessNotification) {
+            <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 space-y-2">
+              <div class="flex items-center gap-2">
+                <svg lucideAlertCircle class="text-amber-600 h-3.5 w-3.5"></svg>
+                <p class="text-[0.68rem] font-black uppercase tracking-widest text-amber-700">Ajustes solicitados</p>
+              </div>
+              <p class="text-xs text-amber-800 leading-relaxed">{{ currentProcessNotification.generalComment || currentProcessNotification.message }}</p>
+            </div>
+          }
+
+          <!-- Process Type -->
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="proc-type">
+              Tipo de Proceso <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="proc-type"
+              name="procType"
+              [(ngModel)]="selectedProcessType"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+            >
+              <option value="festivals">Festival</option>
+              <option value="musicSchools">Escuela de Música</option>
+              <option value="spacesInfrastructure">Lutier / Taller de Lutería</option>
+            </select>
+          </div>
+
+          <!-- Name -->
+          <div [ngClass]="hasFieldAdjustment('name') ? 'border border-amber-200 bg-amber-50/50 p-3 rounded-xl' : ''">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="proc-name">
+              Nombre del Proceso / Entidad <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="proc-name"
+              type="text"
+              name="procName"
+              [(ngModel)]="procForm().name"
+              required
+              placeholder="Ej. Escuela de Música Tradicional del Chicamocha"
+              class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+            />
+            @if (hasFieldAdjustment('name')) {
+              <p class="text-[0.68rem] font-medium text-amber-700 mt-1">{{ currentFieldAdjustments['name'] }}</p>
+            }
+          </div>
+
+          <!-- Location -->
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div [ngClass]="hasFieldAdjustment('department') ? 'border border-amber-200 bg-amber-50/50 p-3 rounded-xl' : ''">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="proc-dept">
+                Departamento <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="proc-dept"
+                name="procDept"
+                [(ngModel)]="procForm().department"
+                (change)="procForm().municipality = ''"
+                required
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              >
+                <option value="">Seleccione departamento</option>
+                @for (d of departments; track d) {
+                  <option [value]="d">{{ d }}</option>
+                }
+              </select>
+              @if (hasFieldAdjustment('department')) {
+                <p class="text-[0.68rem] font-medium text-amber-700 mt-1">{{ currentFieldAdjustments['department'] }}</p>
+              }
+            </div>
+
+            <div [ngClass]="hasFieldAdjustment('municipality') ? 'border border-amber-200 bg-amber-50/50 p-3 rounded-xl' : ''">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="proc-muni">
+                Municipio <span class="text-red-500">*</span>
+              </label>
+              <select
+                id="proc-muni"
+                name="procMuni"
+                [(ngModel)]="procForm().municipality"
+                required
+                [disabled]="!procForm().department"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden disabled:opacity-50"
+              >
+                <option value="">Seleccione municipio</option>
+                @for (m of procMunicipalities; track m) {
+                  <option [value]="m">{{ m }}</option>
+                }
+              </select>
+              @if (hasFieldAdjustment('municipality')) {
+                <p class="text-[0.68rem] font-medium text-amber-700 mt-1">{{ currentFieldAdjustments['municipality'] }}</p>
+              }
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div [ngClass]="hasFieldAdjustment('description') ? 'border border-amber-200 bg-amber-50/50 p-3 rounded-xl' : ''">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="proc-desc">Descripción del Proceso</label>
+            <textarea
+              id="proc-desc"
+              name="procDesc"
+              [(ngModel)]="procForm().description"
+              rows="3"
+              placeholder="Comente brevemente las actividades o propósitos del proceso..."
+              class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden resize-none"
+            ></textarea>
+            @if (hasFieldAdjustment('description')) {
+              <p class="text-[0.68rem] font-medium text-amber-700 mt-1">{{ currentFieldAdjustments['description'] }}</p>
+            }
+          </div>
+
+          <!-- Form Actions -->
+          <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              (click)="showProcessForm.set(false); editingProcessId.set(null);"
+              class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] px-5 py-2.5 text-xs font-black text-slate-950 transition font-alternate uppercase cursor-pointer"
+            >
+              {{ editingProcessId() ? 'Reenviar a evaluación' : 'Enviar a evaluación' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+
+    <!-- Tab: Profile Update -->
+    @if (activeTab() === 'profile' && !showProcessForm()) {
+      <form (submit)="handleSubmitProfile($event)" class="rounded-xl border border-slate-200 bg-white overflow-hidden animate-fade-in max-w-2xl mx-auto w-full shadow-xs">
+        <div class="border-b border-slate-100 bg-[#291242] text-white px-5 py-4 flex items-center justify-between">
+          <div>
+            <h3 class="font-alternate text-sm uppercase tracking-wider font-bold">Editar Perfil</h3>
+            <p class="text-xs text-white/60 mt-0.5">Actualice sus datos personales y credenciales de acceso</p>
+          </div>
+          <svg lucideUser class="text-[#00DA5E] h-5 w-5"></svg>
+        </div>
+
+        <div class="p-6 space-y-5">
+          @if (profileSuccess()) {
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-fade-in">
+              <svg lucideCheckCircle class="text-emerald-600 shrink-0 h-4 w-4"></svg>
+              <span>¡Perfil actualizado con éxito!</span>
+            </div>
+          }
+
+          @if (profileError()) {
+            <div class="rounded-xl border border-red-200 bg-red-50/70 p-4 text-red-800 text-xs font-bold flex items-center gap-2 animate-fade-in">
+              <svg lucideAlertCircle class="text-red-600 shrink-0 h-4 w-4"></svg>
+              <span>{{ profileError() }}</span>
+            </div>
+          }
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="profile-fullname">
+                Nombre Completo <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="profile-fullname"
+                type="text"
+                name="profileFullname"
+                [(ngModel)]="profileForm().fullName"
+                required
+                placeholder="Ej. Juan Pérez"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="profile-email">
+                Correo Electrónico <span class="text-red-500">*</span>
+              </label>
+              <input
+                id="profile-email"
+                type="email"
+                name="profileEmail"
+                [(ngModel)]="profileForm().email"
+                required
+                placeholder="ejemplo@pnmc.local"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="profile-telefono">Teléfono de Contacto</label>
+              <input
+                id="profile-telefono"
+                type="text"
+                name="profileTelefono"
+                [(ngModel)]="profileForm().telefono"
+                placeholder="Ej. 312 345 6789"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              />
+            </div>
+
+            <div class="md:col-span-2 border-t border-slate-100 my-2 pt-4">
+              <h4 class="text-xs font-black uppercase tracking-widest text-[#291242] mb-1">Cambiar Contraseña (Opcional)</h4>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="profile-password">Nueva Contraseña</label>
+              <input
+                id="profile-password"
+                type="password"
+                name="profilePassword"
+                [(ngModel)]="profileForm().password"
+                placeholder="Mínimo 10 caracteres"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="profile-confirmpassword">Confirmar Nueva Contraseña</label>
+              <input
+                id="profile-confirmpassword"
+                type="password"
+                name="profileConfirmPassword"
+                [(ngModel)]="profileForm().confirmPassword"
+                placeholder="Repita la nueva contraseña"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 px-5 py-4 border-t border-slate-100 flex justify-end">
+          <button
+            type="submit"
+            [disabled]="profileSaving()"
+            class="rounded-lg bg-[#291242] hover:bg-[#1f0d32] text-white px-5 py-2 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            @if (profileSaving()) {
+              <svg lucideRefreshCw class="animate-spin text-[#00DA5E] h-3.5 w-3.5"></svg>
+              Guardando...
+            } @else {
+              <svg lucideSave class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+              Guardar Cambios
+            }
+          </button>
+        </div>
+      </form>
+    }
+
+  </div>
+
+  <!-- Change Password Modal -->
+  @if (showPasswordModal()) {
+    <div class="fixed inset-0 z-[7000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in" (click)="showPasswordModal.set(false)">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in" (click)="$event.stopPropagation()">
+        
+        <!-- Header -->
+        <div class="bg-[#291242] px-6 py-4 flex items-center justify-between text-white">
+          <div class="flex items-center gap-2">
+            <svg lucideLock class="text-[#00DA5E] h-4 w-4"></svg>
+            <h3 class="font-alternate text-sm uppercase tracking-wider font-bold">Cambiar Contraseña</h3>
+          </div>
+          <button type="button" (click)="showPasswordModal.set(false)" class="text-white/60 hover:text-white transition cursor-pointer">
+            <svg lucideX class="h-4 w-4"></svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-4">
+          @if (passwordModalStep() === 'request') {
+            <div class="text-center space-y-4 py-4 animate-fade-in">
+              <svg lucideMail class="mx-auto text-slate-300 animate-bounce h-10 w-10"></svg>
+              <div class="space-y-1">
+                <p class="text-sm font-semibold text-slate-800">Verificación de identidad requerida</p>
+                <p class="text-xs text-slate-400">Enviaremos un código de verificación de 6 dígitos a su correo electrónico:</p>
+                <p class="text-xs font-bold text-[#291242] bg-slate-100 py-1.5 rounded-lg border border-slate-200 mt-2">{{ session?.email }}</p>
+              </div>
+              <button
+                type="button"
+                (click)="handleSendPasswordCode()"
+                [disabled]="passwordModalStatus() === 'sending'"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#291242] hover:bg-[#3d1a63] disabled:opacity-50 px-5 py-3 text-xs font-black text-white transition cursor-pointer"
+              >
+                @if (passwordModalStatus() === 'sending') {
+                  <svg lucideRefreshCw class="animate-spin text-[#00DA5E] h-3.5 w-3.5"></svg>
+                } @else {
+                  <svg lucideSend class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+                }
+                Enviar código de verificación
+              </button>
+            </div>
+          }
+
+          @if (passwordModalStep() === 'verify') {
+            <form (submit)="handleVerifyPasswordCode($event)" class="space-y-4 animate-fade-in">
+              <div class="space-y-1">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Código de verificación</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ingrese el código de 6 dígitos (ej. 123456)"
+                  [(ngModel)]="passwordModalCode"
+                  name="pwdCode"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 outline-hidden focus:border-[#291242] transition text-center font-mono tracking-widest text-lg font-bold"
+                />
+              </div>
+              <button
+                type="submit"
+                class="w-full rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-5 py-3 text-xs font-black text-white transition cursor-pointer"
+              >
+                Validar código
+              </button>
+            </form>
+          }
+
+          @if (passwordModalStep() === 'change') {
+            <form (submit)="handleChangePasswordSubmit($event)" class="space-y-4 animate-fade-in">
+              @if (session?.role === 'webmaster') {
+                <div class="rounded-xl border border-violet-100 bg-violet-50/50 p-3 text-[0.68rem] text-violet-700 leading-relaxed">
+                  <strong>Administrador Webmaster:</strong> Puedes cambiar tu contraseña directamente sin necesidad de código de verificación.
+                </div>
+              }
+              <div class="space-y-1">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Nueva contraseña</label>
+                <input
+                  type="password"
+                  required
+                  minlength="5"
+                  [(ngModel)]="passwordModalNewPassword"
+                  name="pwdNew"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 outline-hidden focus:border-[#291242] transition"
+                />
+                
+                @if (passwordModalNewPassword()) {
+                  <div class="space-y-1.5 mt-1">
+                    <div class="flex gap-1">
+                      @for (i of [0, 1, 2, 3]; track i) {
+                        <div class="h-1 flex-1 rounded-full transition-colors"
+                             [ngClass]="i < passwordStrength(passwordModalNewPassword()) ? getPasswordStrengthColorClass(passwordModalNewPassword()) : 'bg-slate-200'">
+                        </div>
+                      }
+                    </div>
+                    <p class="text-[0.6rem] font-bold text-slate-400 uppercase tracking-wider">{{ getPasswordStrengthLabel(passwordModalNewPassword()) }}</p>
+                  </div>
+                }
+              </div>
+              <div class="space-y-1">
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400">Confirmar nueva contraseña</label>
+                <input
+                  type="password"
+                  required
+                  [(ngModel)]="passwordModalConfirmPassword"
+                  name="pwdConfirm"
+                  class="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-300 outline-hidden focus:border-[#291242] transition"
+                />
+              </div>
+              
+              <button
+                type="submit"
+                [disabled]="passwordModalStatus() === 'saving'"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] disabled:opacity-50 px-5 py-3 text-xs font-black text-slate-950 transition cursor-pointer"
+              >
+                @if (passwordModalStatus() === 'saving') {
+                  <svg lucideRefreshCw class="animate-spin text-slate-950 h-3.5 w-3.5"></svg>
+                  Guardando...
+                } @else {
+                  Cambiar Contraseña
+                }
+              </button>
+            </form>
+          }
+
+          <!-- Message -->
+          @if (passwordModalMessage()) {
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs font-semibold text-slate-600 mt-2">
+              {{ passwordModalMessage() }}
+            </div>
+          }
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- Match Preview Modal -->
+  @if (previewMatch()) {
+    <div class="fixed inset-0 z-[7000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in" (click)="previewMatch.set(null)">
+      <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-fade-in flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
+        
+        <!-- Header -->
+        <div class="bg-[#291242] text-white px-6 py-5 flex items-center justify-between border-b border-white/10">
+          <div class="flex items-center gap-2">
+            <span class="rounded-full bg-[#00DA5E]/20 border border-[#00DA5E]/30 px-2.5 py-0.5 text-[0.62rem] font-bold text-[#00DA5E] uppercase tracking-wider">
+              {{ previewMatch().type === 'musicSchools' ? 'Escuela de Música' : 'Festival' }}
+            </span>
+            <h3 class="font-alternate text-xs uppercase tracking-widest font-black text-[#00DA5E]">Previsualizar Registro Histórico</h3>
+          </div>
+          <button
+            type="button"
+            (click)="previewMatch.set(null)"
+            class="text-white/60 hover:text-white transition cursor-pointer"
+          >
+            <svg lucideX class="h-4.5 w-4.5"></svg>
+          </button>
+        </div>
+        
+        <!-- Body -->
+        <div class="p-6 space-y-6 overflow-y-auto flex-1 text-slate-700">
+          <div class="space-y-2">
+            <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Nombre del Proceso</p>
+            <h2 class="text-xl font-black text-slate-900 leading-snug">{{ previewMatch().title }}</h2>
+            <div class="flex items-center gap-4 text-[0.68rem] text-slate-500 font-bold uppercase tracking-wider">
+              <span>📍 {{ previewMatch().municipality }}, {{ previewMatch().department }}</span>
+              <span>📁 Fuente: {{ previewMatch().source }}</span>
+            </div>
+          </div>
+          
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+            <p class="text-[0.62rem] font-black uppercase tracking-widest text-[#291242]">Descripción Original</p>
+            <p class="text-xs text-slate-600 leading-relaxed font-medium">{{ previewMatch().description }}</p>
+          </div>
+          
+          <div class="grid sm:grid-cols-2 gap-4">
+            @if (previewMatch().type === 'musicSchools') {
+              <div class="space-y-1">
+                <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Director / Responsable</p>
+                <p class="text-xs font-bold text-slate-700">{{ previewMatch().directorName || 'No registrado' }}</p>
+              </div>
+              <div class="space-y-1">
+                <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Estudiantes Activos</p>
+                <p class="text-xs font-bold text-slate-700">{{ previewMatch().students || '0' }} jóvenes</p>
+              </div>
+              <div class="space-y-1 sm:col-span-2">
+                <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Procesos Formativos</p>
+                <p class="text-xs font-bold text-slate-700">{{ previewMatch().trainingProcesses || 'No especificado' }}</p>
+              </div>
+            } @else {
+              <div class="space-y-1">
+                <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Organizador</p>
+                <p class="text-xs font-bold text-slate-700">{{ previewMatch().organizer || 'No registrado' }}</p>
+              </div>
+              <div class="space-y-1">
+                <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Ediciones Realizadas</p>
+                <p class="text-xs font-bold text-slate-700">{{ previewMatch().versionsCount || '0' }} versiones</p>
+              </div>
+            }
+            
+            <div class="space-y-1">
+              <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Correo Histórico</p>
+              <p class="text-xs font-bold text-slate-700">{{ previewMatch().contactEmail || 'No registrado' }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Teléfono Histórico</p>
+              <p class="text-xs font-bold text-slate-700">{{ previewMatch().contactPhone || 'No registrado' }}</p>
+            </div>
+          </div>
+          
+          <div class="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-1.5 border-l-4 border-l-amber-500">
+            <p class="text-[0.68rem] font-black uppercase tracking-widest text-amber-700 flex items-center gap-1.5">
+              <svg lucideAlertCircle class="h-3.5 w-3.5"></svg>
+              Aviso Importante
+            </p>
+            <p class="text-xs text-amber-800 leading-relaxed font-semibold">
+              Al reclamar este registro, se le asignará la propiedad del mismo y se creará como un <strong>Borrador</strong> en su panel personal. Esto le permitirá editar y enriquecer toda su información histórica (fotos, enlaces, coordenadas y programación vigente) antes de enviarlo para su publicación definitiva en el Mapa.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            (click)="previewMatch.set(null)"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer"
+          >
+            Cerrar Previsualización
+          </button>
+          <button
+            type="button"
+            (click)="handleClaimMatch(previewMatch()); previewMatch.set(null);"
+            class="rounded-xl bg-[#00DA5E] hover:bg-[#00c454] px-5 py-2.5 text-xs font-black text-slate-950 transition uppercase tracking-wider shadow-md cursor-pointer"
+          >
+            Vincular y Reclamar Proceso
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+</div>

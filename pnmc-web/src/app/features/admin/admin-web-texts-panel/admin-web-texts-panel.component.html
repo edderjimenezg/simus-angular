@@ -1,0 +1,546 @@
+@if (!_enabled()) {
+  <div class="rounded-2xl border border-rose-200 bg-rose-50/50 p-6 text-center">
+    <svg lucideAlertCircle class="mx-auto text-rose-500 mb-3 h-6 w-6"></svg>
+    <h3 class="text-sm font-black text-rose-950 uppercase font-alternate tracking-wide">Acceso Denegado</h3>
+    <p class="text-xs text-rose-700 mt-1 max-w-md mx-auto">Su perfil no cuenta con permisos para administrar los textos editables de la web pública.</p>
+  </div>
+} @else {
+  <div class="space-y-6">
+    <div>
+      <h2 class="text-lg font-black text-slate-900 font-alternate uppercase tracking-wide">Administración de textos</h2>
+      <p class="text-xs text-slate-400 mt-0.5">Controla y edita los textos explicativos, descripciones e introducciones en toda la plataforma pública con previsualización en vivo.</p>
+    </div>
+
+    @if (saveStatus()) {
+      <div class="p-4 rounded-xl border flex items-center gap-3 animate-fade-in"
+           [ngClass]="saveStatus()?.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+                     saveStatus()?.type === 'info' ? 'bg-blue-50 border-blue-200 text-blue-800' :
+                     'bg-rose-50 border-rose-200 text-rose-800'">
+         @if (saveStatus()?.type === 'success') {
+          <svg lucideCheckCircle2 class="h-4 w-4 text-emerald-600"></svg>
+        } @else {
+          <svg lucideAlertCircle class="h-4 w-4" [ngClass]="saveStatus()?.type === 'info' ? 'text-blue-600' : 'text-rose-600'"></svg>
+        }
+        <p class="text-xs font-bold">{{ saveStatus()?.message }}</p>
+      </div>
+    }
+
+    <!-- Horizontal pill navigation -->
+    <div class="flex flex-wrap gap-1.5 pb-2 border-b border-slate-200">
+      @for (pill of ['Home', 'Agenda', 'Noticias', 'Galería', 'Editorial', 'Mapa', 'Ejes', 'Estrategias', 'Navegación y Footer']; track pill) {
+        <button
+          type="button"
+          (click)="selectPill(pill)"
+          class="rounded-full px-4 py-1.5 text-xs font-bold transition-all cursor-pointer"
+          [ngClass]="selectedPill() === pill ? 'bg-[#291242] text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-300'"
+        >
+          {{ pill }}
+        </button>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- COL 1: Group Selector List -->
+      <div class="lg:col-span-3 space-y-4">
+        <div class="relative">
+          <svg lucideSearch class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-3.5 w-3.5"></svg>
+          <input
+            type="text"
+            placeholder="Buscar sección o clave..."
+            [(ngModel)]="searchQuery"
+            class="w-full rounded-xl border border-slate-200 bg-white pl-8 pr-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 focus:border-[#291242] focus:outline-hidden transition shadow-xs"
+          />
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-2xl p-2.5 space-y-1 shadow-sm">
+          <p class="px-2.5 pb-2 text-[0.62rem] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100">Grupos de Contenido</p>
+          <div class="space-y-0.5 max-h-[22rem] overflow-y-auto pt-1.5">
+            @for (group of filteredGroups(); track group.id) {
+              <button
+                type="button"
+                (click)="selectedGroup.set(group.id)"
+                class="w-full flex items-center justify-between gap-3 rounded-xl px-2.5 py-2.5 text-left text-xs font-bold transition-all border cursor-pointer"
+                [ngClass]="selectedGroup() === group.id
+                  ? 'bg-[#291242]/5 text-[#291242] border-[#291242]/10'
+                  : 'text-slate-600 hover:bg-slate-50/60 border-transparent'"
+              >
+                <span class="truncate">{{ group.label }}</span>
+                <span class="shrink-0 text-[0.58rem] bg-slate-100 px-1.5 py-0.5 rounded-full text-slate-500 font-bold uppercase">
+                  {{ group.section === 'Mapa Ecosistémico' ? 'Mapa' : group.section }}
+                </span>
+              </button>
+            } @empty {
+              <p class="text-center py-4 text-xs text-slate-400">No se encontraron resultados.</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- COL 2: Editor form area -->
+      <div class="lg:col-span-5 space-y-4">
+        @if (activeGroupObj()) {
+          <div class="space-y-4">
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div class="border-b border-slate-100 pb-3 flex items-center justify-between gap-4">
+                <div>
+                  <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">{{ activeGroupObj()?.label }}</h3>
+                  <p class="text-[0.65rem] text-slate-400 font-medium">Sección: {{ activeGroupObj()?.section }}</p>
+                </div>
+              </div>
+
+              <!-- Sub-tabs selector for Axis feature -->
+              @if (activeGroupObj()?.section === 'Ejes') {
+                <div class="flex flex-wrap gap-1 border-b border-slate-100 pb-2 mb-4">
+                  @for (tab of ejeSubTabsList(); track tab.id) {
+                    <button
+                      type="button"
+                      (click)="activeEjeSubTab.set(tab.id)"
+                      class="rounded-lg px-3 py-1.5 text-[0.68rem] font-bold transition-all cursor-pointer"
+                      [ngClass]="activeEjeSubTab() === tab.id ? 'bg-[#291242]/10 text-[#291242]' : 'bg-transparent text-slate-500 hover:bg-slate-50'"
+                    >
+                      {{ tab.label }}
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- Editor Inputs -->
+              @if (activeGroupObj()?.id === 'home_hero') {
+                <div class="space-y-4">
+                  <!-- Visual card for home_tag -->
+                  <div class="space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3">
+                    <div class="flex items-center justify-between">
+                      <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">Etiqueta superior</label>
+                      <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_tag'] || '').length > getCharLimit('home_tag') ? 'text-rose-500' : 'text-slate-400'">
+                        {{ (formData()['home_tag'] || '').length }}/{{ getCharLimit('home_tag') }}
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      [value]="formData()['home_tag'] || ''"
+                      (input)="handleInputChange('home_tag', $any($event.target).value)"
+                      placeholder="Ej. PLAN NACIONAL DE MÚSICA..."
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                    />
+                    
+                    <!-- Collapsible History -->
+                    @if (getHistory('home_tag').length > 0) {
+                      <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                        <button type="button" (click)="toggleHistoryCollapse('home_tag')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                          <span>{{ isHistoryOpen('home_tag') ? '▼' : '▶' }}</span>
+                          Ver historial de cambios ({{ getHistory('home_tag').length }})
+                        </button>
+                        @if (isHistoryOpen('home_tag')) {
+                          <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                            @for (item of getHistory('home_tag').slice().reverse(); track $index) {
+                              <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                <div class="space-y-0.5 flex-1">
+                                  <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-bold text-slate-700">{{ item.updatedBy }}</span>
+                                    <span class="text-slate-400">{{ item.updatedAt }}</span>
+                                    <span class="text-[0.52rem] rounded px-1.5 bg-slate-200 text-slate-500 font-bold uppercase">{{ item.status }}</span>
+                                  </div>
+                                  <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                </div>
+                                <button type="button" (click)="handleRestoreVersion('home_tag', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                  Restaurar
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Combined Title visual box -->
+                  <div class="border-2 border-dashed border-[#00DA5E]/40 rounded-xl p-4 bg-emerald-50/10 space-y-4 relative">
+                    <div class="absolute top-0 right-4 -translate-y-1/2 bg-[#00DA5E] text-slate-950 rounded-full px-2.5 py-0.5 text-[0.55rem] font-black uppercase tracking-wider shadow-sm">
+                      Título Combinado (Un solo elemento visual)
+                    </div>
+                    <p class="text-[0.68rem] text-[#00DA5E] font-bold leading-normal">
+                      El encabezado principal del Home se divide en dos campos para permitir la inserción del acento destacado verde en el portal público.
+                    </p>
+
+                    <div class="space-y-3">
+                      <!-- Title field -->
+                      <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                          <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">1. Título principal (Estándar - Blanco/Gris)</label>
+                          <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_title'] || '').length > getCharLimit('home_title') ? 'text-rose-500' : 'text-slate-400'">
+                            {{ (formData()['home_title'] || '').length }}/{{ getCharLimit('home_title') }}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          [value]="formData()['home_title'] || ''"
+                          (input)="handleInputChange('home_title', $any($event.target).value)"
+                          placeholder="Ej. Huellas y Apuestas de la..."
+                          class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                        />
+                        
+                        <!-- History for home_title -->
+                        @if (getHistory('home_title').length > 0) {
+                          <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                            <button type="button" (click)="toggleHistoryCollapse('home_title')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                              <span>{{ isHistoryOpen('home_title') ? '▼' : '▶' }}</span>
+                              Ver historial de cambios ({{ getHistory('home_title').length }})
+                            </button>
+                            @if (isHistoryOpen('home_title')) {
+                              <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                                @for (item of getHistory('home_title').slice().reverse(); track $index) {
+                                  <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                    <div class="space-y-0.5 flex-1">
+                                      <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-bold text-slate-700">{{ item.updatedBy }}</span>
+                                        <span class="text-slate-400">{{ item.updatedAt }}</span>
+                                        <span class="text-[0.52rem] rounded px-1.5 bg-slate-200 text-slate-500 font-bold uppercase">{{ item.status }}</span>
+                                      </div>
+                                      <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                    </div>
+                                    <button type="button" (click)="handleRestoreVersion('home_title', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                      Restaurar
+                                    </button>
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+
+                      <div class="flex items-center justify-center -my-1">
+                        <div class="w-0.5 h-3 border-l-2 border-dotted border-slate-300"></div>
+                      </div>
+
+                      <!-- Title accent field -->
+                      <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                          <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">2. Acento en cursiva destacados (Verde)</label>
+                          <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_title_accent'] || '').length > getCharLimit('home_title_accent') ? 'text-rose-500' : 'text-slate-400'">
+                            {{ (formData()['home_title_accent'] || '').length }}/{{ getCharLimit('home_title_accent') }}
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          [value]="formData()['home_title_accent'] || ''"
+                          (input)="handleInputChange('home_title_accent', $any($event.target).value)"
+                          placeholder="Ej. Diversidad Sonora..."
+                          class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                        />
+                        
+                        <!-- History for home_title_accent -->
+                        @if (getHistory('home_title_accent').length > 0) {
+                          <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                            <button type="button" (click)="toggleHistoryCollapse('home_title_accent')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                              <span>{{ isHistoryOpen('home_title_accent') ? '▼' : '▶' }}</span>
+                              Ver historial de cambios ({{ getHistory('home_title_accent').length }})
+                            </button>
+                            @if (isHistoryOpen('home_title_accent')) {
+                              <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                                @for (item of getHistory('home_title_accent').slice().reverse(); track $index) {
+                                  <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                    <div class="space-y-0.5 flex-1">
+                                      <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-bold text-slate-700">{{ item.updatedBy }}</span>
+                                        <span class="text-slate-400">{{ item.updatedAt }}</span>
+                                        <span class="text-[0.52rem] rounded px-1.5 bg-slate-200 text-slate-500 font-bold uppercase">{{ item.status }}</span>
+                                      </div>
+                                      <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                    </div>
+                                    <button type="button" (click)="handleRestoreVersion('home_title_accent', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                      Restaurar
+                                    </button>
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Visual card for description -->
+                  <div class="space-y-1 bg-slate-50/50 border border-slate-100 rounded-xl p-3">
+                    <div class="flex items-center justify-between">
+                      <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">Descripción del Hero</label>
+                      <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_description'] || '').length > getCharLimit('home_description') ? 'text-rose-500' : 'text-slate-400'">
+                        {{ (formData()['home_description'] || '').length }}/{{ getCharLimit('home_description') }}
+                      </span>
+                    </div>
+                    <textarea
+                      rows="3"
+                      [value]="formData()['home_description'] || ''"
+                      (input)="handleInputChange('home_description', $any($event.target).value)"
+                      placeholder="Descripción introductoria del Hero del Home..."
+                      class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden resize-none"
+                    ></textarea>
+                    
+                    <!-- History for home_description -->
+                    @if (getHistory('home_description').length > 0) {
+                      <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                        <button type="button" (click)="toggleHistoryCollapse('home_description')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                          <span>{{ isHistoryOpen('home_description') ? '▼' : '▶' }}</span>
+                          Ver historial de cambios ({{ getHistory('home_description').length }})
+                        </button>
+                        @if (isHistoryOpen('home_description')) {
+                          <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                            @for (item of getHistory('home_description').slice().reverse(); track $index) {
+                              <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                <div class="space-y-0.5 flex-1">
+                                  <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="font-bold text-slate-700">{{ item.updatedBy }}</span>
+                                    <span class="text-slate-400">{{ item.updatedAt }}</span>
+                                    <span class="text-[0.52rem] rounded px-1.5 bg-slate-200 text-slate-500 font-bold uppercase">{{ item.status }}</span>
+                                  </div>
+                                  <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                </div>
+                                <button type="button" (click)="handleRestoreVersion('home_description', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                  Restaurar
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @else if (activeGroupObj()?.id === 'home_ctas') {
+                <div class="border border-slate-100 bg-slate-50/30 rounded-xl p-4 space-y-4">
+                  <p class="text-[0.65rem] text-slate-400 font-bold uppercase tracking-wider">Botones principales del Hero (CTAs)</p>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">Botón Primario</label>
+                        <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_btn_about'] || '').length > getCharLimit('home_btn_about') ? 'text-rose-500' : 'text-slate-400'">
+                          {{ (formData()['home_btn_about'] || '').length }}/{{ getCharLimit('home_btn_about') }}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        [value]="formData()['home_btn_about'] || ''"
+                        (input)="handleInputChange('home_btn_about', $any($event.target).value)"
+                        placeholder="Ej. Sobre el PNMC"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                      />
+                      
+                      <!-- History home_btn_about -->
+                      @if (getHistory('home_btn_about').length > 0) {
+                        <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                          <button type="button" (click)="toggleHistoryCollapse('home_btn_about')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                            <span>{{ isHistoryOpen('home_btn_about') ? '▼' : '▶' }}</span>
+                            Historial ({{ getHistory('home_btn_about').length }})
+                          </button>
+                          @if (isHistoryOpen('home_btn_about')) {
+                            <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                              @for (item of getHistory('home_btn_about').slice().reverse(); track $index) {
+                                <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                  <div class="space-y-0.5 flex-1">
+                                    <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                  </div>
+                                  <button type="button" (click)="handleRestoreVersion('home_btn_about', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                    Restaurar
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">Botón Secundario</label>
+                        <span class="text-[0.58rem] font-bold" [ngClass]="(formData()['home_btn_ejes'] || '').length > getCharLimit('home_btn_ejes') ? 'text-rose-500' : 'text-slate-400'">
+                          {{ (formData()['home_btn_ejes'] || '').length }}/{{ getCharLimit('home_btn_ejes') }}
+                        </span>
+                      </div>
+                      <input
+                        type="text"
+                        [value]="formData()['home_btn_ejes'] || ''"
+                        (input)="handleInputChange('home_btn_ejes', $any($event.target).value)"
+                        placeholder="Ej. Explorar Ejes"
+                        class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden"
+                      />
+                      
+                      <!-- History home_btn_ejes -->
+                      @if (getHistory('home_btn_ejes').length > 0) {
+                        <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                          <button type="button" (click)="toggleHistoryCollapse('home_btn_ejes')" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                            <span>{{ isHistoryOpen('home_btn_ejes') ? '▼' : '▶' }}</span>
+                            Historial ({{ getHistory('home_btn_ejes').length }})
+                          </button>
+                          @if (isHistoryOpen('home_btn_ejes')) {
+                            <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                              @for (item of getHistory('home_btn_ejes').slice().reverse(); track $index) {
+                                <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                  <div class="space-y-0.5 flex-1">
+                                    <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                  </div>
+                                  <button type="button" (click)="handleRestoreVersion('home_btn_ejes', item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                    Restaurar
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              } @else {
+                <!-- Dynamic keys rendering -->
+                <div class="space-y-4 max-h-[30rem] overflow-y-auto pr-1">
+                  @for (key of keysToRender(); track key) {
+                    <div class="space-y-1">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.62rem] font-black uppercase tracking-wider text-slate-500">{{ getFieldLabel(key) }}</label>
+                        <span class="text-[0.58rem] font-bold" [ngClass]="(formData()[key] || '').length > getCharLimit(key) ? 'text-rose-500' : 'text-slate-400'">
+                          {{ (formData()[key] || '').length }}/{{ getCharLimit(key) }}
+                        </span>
+                      </div>
+                      <textarea
+                        [rows]="key.includes('desc') || key.includes('intro') || key.includes('mission') || key.includes('vision') || key.includes('closing') || key.includes('address') || key.includes('schedule') ? 3 : 2"
+                        [value]="formData()[key] || ''"
+                        (input)="handleInputChange(key, $any($event.target).value)"
+                        placeholder="Ingrese el valor..."
+                        class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] transition outline-hidden resize-none"
+                      ></textarea>
+                      
+                      <!-- History for generic key -->
+                      @if (getHistory(key).length > 0) {
+                        <div class="mt-1.5 pt-1.5 border-t border-slate-100">
+                          <button type="button" (click)="toggleHistoryCollapse(key)" class="flex items-center gap-1 text-[0.6rem] font-bold text-slate-400 hover:text-slate-600 select-none cursor-pointer">
+                            <span>{{ isHistoryOpen(key) ? '▼' : '▶' }}</span>
+                            Ver historial de cambios ({{ getHistory(key).length }})
+                          </button>
+                          @if (isHistoryOpen(key)) {
+                            <div class="mt-2 space-y-1.5 max-h-[10rem] overflow-y-auto pr-1">
+                              @for (item of getHistory(key).slice().reverse(); track $index) {
+                                <div class="bg-slate-100/60 hover:bg-slate-100 rounded-lg p-2 text-[0.62rem] border border-slate-200 transition flex items-start justify-between gap-3">
+                                  <div class="space-y-0.5 flex-1">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                      <span class="font-bold text-slate-700">{{ item.updatedBy }}</span>
+                                      <span class="text-slate-400">{{ item.updatedAt }}</span>
+                                    </div>
+                                    <p class="text-slate-600 line-clamp-2 leading-relaxed">"{{ item.content }}"</p>
+                                  </div>
+                                  <button type="button" (click)="handleRestoreVersion(key, item.content)" class="rounded bg-[#291242] hover:bg-[#1d0b30] text-white px-2 py-1 text-[0.52rem] font-black uppercase tracking-wider self-center shrink-0 transition cursor-pointer">
+                                    Restaurar
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Footer Actions -->
+              <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  (click)="handleSaveAllGroup(false)"
+                  class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer"
+                >
+                  Guardar Borrador
+                </button>
+                <button
+                  type="button"
+                  (click)="handleSaveAllGroup(true)"
+                  class="inline-flex items-center gap-1.5 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] px-5 py-2.5 text-xs font-black text-slate-950 transition font-alternate uppercase tracking-wide shadow-sm cursor-pointer"
+                >
+                   <svg lucideSave class="h-3.5 w-3.5"></svg>
+                  Guardar y Publicar
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="p-8 text-center text-xs text-slate-400 bg-white border border-slate-200 rounded-2xl">
+            Seleccione un grupo de textos para comenzar a editar.
+          </div>
+        }
+      </div>
+
+      <!-- COL 3: High Fidelity Live Preview Area -->
+      <div class="lg:col-span-4 space-y-4">
+        <div class="bg-slate-100 border border-slate-200 rounded-2xl p-4 shadow-sm relative overflow-hidden flex flex-col gap-3 min-h-[30rem]">
+          <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+            <span class="text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Previsualización Real en Vivo</span>
+            <span class="h-2 w-2 rounded-full bg-[#00DA5E] animate-pulse"></span>
+          </div>
+
+          <!-- LIVE PREVIEW BOX -->
+          <div class="flex-1 rounded-xl bg-slate-950 flex flex-col overflow-hidden shadow-inner border border-white/5 relative justify-center">
+            
+            @if (activeGroupObj()?.id === 'home_hero' || activeGroupObj()?.id === 'home_ctas') {
+              <!-- HOME HERO PREVIEW -->
+              <div class="bg-[#291242] p-6 text-white text-left font-nunito flex flex-col justify-center min-h-[22rem] relative overflow-hidden select-none">
+                <!-- Glowing blobs -->
+                <div class="absolute top-0 right-0 h-40 w-40 bg-[#00DA5E]/5 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 h-40 w-40 bg-violet-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <span class="uppercase tracking-[0.2em] font-alternate text-[0.58rem] font-black text-[#00DA5E] mb-2 z-10">
+                  {{ formData()['home_tag'] || 'PLAN NACIONAL DE MÚSICA PARA LA CONVIVENCIA 2025—2035' }}
+                </span>
+
+                <h1 class="font-alternate text-lg md:text-xl font-black leading-tight mb-3 z-10 text-white">
+                  {{ formData()['home_title'] || 'Huellas y Apuestas de la' }}
+                  <span class="italic text-[#00DA5E] font-normal ml-1.5 block sm:inline">
+                    {{ formData()['home_title_accent'] || 'Diversidad Sonora' }}
+                  </span>
+                </h1>
+
+                <p class="text-[0.68rem] text-white/70 leading-relaxed font-medium mb-5 z-10 max-w-sm">
+                  {{ formData()['home_description'] || 'Un pacto colectivo que reconoce la música como un derecho cultural y un bien común en todo el territorio nacional.' }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-2.5 z-10">
+                  <span class="bg-[#00DA5E] text-slate-950 font-black rounded-xl text-[0.58rem] px-3.5 py-2 uppercase tracking-wide border border-transparent shadow-sm">
+                    {{ formData()['home_btn_about'] || 'Sobre el PNMC' }}
+                  </span>
+                  <span class="bg-white/10 hover:bg-white/15 text-white font-black rounded-xl text-[0.58rem] px-3.5 py-2 uppercase tracking-wide border border-white/10 transition">
+                    {{ formData()['home_btn_ejes'] || 'Explorar Ejes' }}
+                  </span>
+                </div>
+              </div>
+            } @else {
+              <!-- GENERAL CARD PREVIEW -->
+              <div class="p-6 text-white text-left font-nunito flex flex-col justify-center min-h-[22rem] relative overflow-hidden select-none bg-slate-900">
+                <p class="text-[0.55rem] uppercase tracking-widest text-[#00DA5E] font-bold mb-1">
+                  {{ activeGroupObj()?.section }} · Previsualización
+                </p>
+                <h2 class="text-base font-black uppercase font-alternate tracking-wide text-white mb-3">
+                  {{ activeGroupObj()?.label }}
+                </h2>
+                
+                <div class="space-y-3">
+                  @for (key of keysToRender().slice(0, 3); track key) {
+                    <div class="border-l-2 border-[#00DA5E] pl-3 py-1 bg-white/5 rounded-r-md">
+                      <p class="text-[0.55rem] font-bold text-slate-400 uppercase">{{ getFieldLabel(key) }}</p>
+                      <p class="text-xs text-slate-200 mt-1 leading-normal italic line-clamp-3">
+                        "{{ formData()[key] || 'Texto de marcador de posición...' }}"
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+}

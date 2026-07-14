@@ -1,0 +1,28 @@
+<div class="min-h-screen bg-[#fbfcfb] pb-24 font-nunito text-slate-700">
+  @if (loading()) {
+    <div class="mx-auto max-w-7xl px-6 py-40 text-center text-slate-500">Cargando la ficha de la escuela…</div>
+  } @else if (!school()) {
+    <app-compact-hero backLabel="Escuelas de música" current="Escuela no encontrada" title="Escuela no encontrada" (onBack)="backToDirectory()"></app-compact-hero>
+  } @else {
+    <app-compact-hero backLabel="Escuelas de música" [current]="school().name" [title]="school().name" [subtitle]="school().municipality + ', ' + school().department + ' · ' + school().type" (onBack)="backToDirectory()"></app-compact-hero>
+
+    <section class="mx-auto max-w-7xl px-6 pt-8 lg:px-8">
+      <div class="grid grid-cols-2 gap-4 rounded-[1.75rem] border border-slate-100 bg-white p-6 shadow-sm sm:w-fit sm:grid-cols-2">
+        <div><span class="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-widest text-[#00A849]"><svg lucideUsersRound [size]="14"></svg> Estudiantes</span><strong class="mt-2 block font-gregor text-4xl text-[#291242]">{{ school().students || '—' }}</strong></div>
+        <div><span class="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-widest text-[#00A849]"><svg lucideBuilding2 [size]="14"></svg> Agrupaciones</span><strong class="mt-2 block font-gregor text-4xl text-[#291242]">{{ school().groups || '—' }}</strong></div>
+      </div>
+    </section>
+
+    <section class="mx-auto grid max-w-7xl gap-8 px-6 pt-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:px-8">
+      <div class="space-y-6">
+        @for (section of school().sections; track section.title) {
+          <article class="rounded-[1.75rem] border border-slate-100 bg-white p-7 shadow-sm">
+            <div class="border-b border-slate-100 pb-5"><h2 class="font-alternate text-lg font-bold uppercase tracking-tight text-[#291242]">{{ section.title }}</h2><p class="mt-2 text-sm leading-relaxed text-slate-500">{{ section.description }}</p></div>
+            <dl class="mt-6 grid gap-x-8 gap-y-6 sm:grid-cols-2">@for (field of section.fields; track field.label) { <div><dt class="font-alternate text-[0.55rem] font-bold uppercase tracking-widest text-slate-400">{{ field.label }}</dt><dd class="mt-2 text-sm leading-relaxed" [class]="field.value === 'Sin información reportada' ? 'text-slate-400 italic' : 'text-slate-600'">{{ field.value }}</dd></div> }</dl>
+          </article>
+        }
+      </div>
+      <aside class="h-fit rounded-[1.75rem] border border-slate-100 bg-white p-7 shadow-sm lg:sticky lg:top-28"><p class="font-alternate text-[0.58rem] font-bold uppercase tracking-[0.2em] text-slate-400">Contacto y territorio</p>@if (school().email) { <a [href]="'mailto:' + school().email" class="mt-6 flex items-center gap-3 text-sm text-slate-600 hover:text-[#00A849]"><svg lucideMail [size]="17"></svg>{{ school().email }}</a> }@if (school().phone) { <p class="mt-4 flex items-center gap-3 text-sm text-slate-600"><svg lucidePhone [size]="17"></svg>{{ school().phone }}</p> }<div class="mt-7 border-t border-slate-100 pt-6"><p class="font-alternate text-[0.55rem] font-bold uppercase tracking-widest text-slate-400">Territorio sonoro</p><p class="mt-2 text-sm leading-relaxed text-slate-600">{{ school().territories || 'Sin información reportada' }}</p></div><button type="button" (click)="openMap()" class="mt-8 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00DA5E] px-4 py-3 font-alternate text-[0.58rem] font-bold uppercase tracking-widest text-[#291242] transition hover:bg-[#8BF784]">Explorar en el mapa <svg lucideArrowRight [size]="14"></svg></button></aside>
+    </section>
+  }
+</div>

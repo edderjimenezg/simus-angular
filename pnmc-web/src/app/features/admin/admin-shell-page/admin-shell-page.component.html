@@ -1,0 +1,701 @@
+@if (sessionState() === 'checking') {
+  <main class="grid min-h-screen place-items-center bg-slate-950">
+    <div class="flex flex-col items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-[#00DA5E]/20 flex items-center justify-center">
+        <svg lucideShieldCheck class="text-[#00DA5E] animate-pulse h-5 w-5"></svg>
+      </div>
+      <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">Verificando sesión...</p>
+    </div>
+  </main>
+} @else if (!isAuthenticated()) {
+  <!-- Login Component -->
+  <app-admin-login [externalPortal]="isExternalPortal()" (loginSuccess)="handleLogin($event)"></app-admin-login>
+} @else if (isCollaboratorRole) {
+  <!-- Collaborator Dashboard -->
+  <app-external-user-dashboard
+    [session]="session()"
+    [divipola]="divipola()"
+    [notifications]="notifications()"
+    (onLogout)="handleLogout()"
+    (onLocalReviewItem)="handleReviewRecord($event)"
+    (onNotificationRead)="handleNotificationRead($event)"
+    (onPasswordChange)="handlePasswordChange($event)"
+    (onProfileUpdate)="handleProfileUpdate($event)"
+  ></app-external-user-dashboard>
+} @else {
+  <!-- Main Admin Console Shell -->
+  <div class="flex h-screen overflow-hidden bg-slate-50 font-nunito">
+
+    <!-- ── Sidebar ─────────────────────────────────────────────── -->
+    <aside class="w-60 shrink-0 bg-[#291242] flex flex-col h-full overflow-y-auto border-r border-white/5">
+      
+      <!-- Brand -->
+      <div class="flex items-center gap-3 px-5 py-4 border-b border-white/10">
+        <div class="h-8 w-8 rounded-lg bg-[#00DA5E]/15 flex items-center justify-center shrink-0">
+          <svg lucideShieldCheck class="text-[#00DA5E] h-4 w-4"></svg>
+        </div>
+        <div class="min-w-0">
+          <p class="font-alternate text-[0.8rem] font-bold uppercase tracking-[0.2em] text-[#00DA5E]">PNMC</p>
+          <p class="text-[0.68rem] font-bold text-white/70 tracking-wide uppercase truncate">Admin Console</p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-3 py-4 space-y-6">
+        @for (group of visibleNavSections; track group.group) {
+          <div>
+            @if (group.label) {
+              <p class="px-3 mb-2 font-alternate text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/40">{{ group.label }}</p>
+            }
+            <div class="space-y-0.5">
+              @for (item of group.items; track item.id) {
+                <button
+                  type="button"
+                  (click)="activeSection.set(item.id)"
+                  class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold transition-all duration-300 cursor-pointer"
+                  [ngClass]="activeSection() === item.id
+                    ? 'bg-white/12 text-white border-l-[3px] border-[#00DA5E] pl-2 rounded-l-none shadow-sm'
+                    : 'text-white/60 hover:bg-white/5 hover:text-white/95 pl-3'"
+                >
+                  @switch (item.id) {
+                    @case ('monitor') { <svg lucideLayoutDashboard class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('ecosystem') { <svg lucideNetwork class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('communications') { <svg lucideNewspaper class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('entities') { <svg lucideBuilding2 class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('review') { <svg lucideClipboardList class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('governance') { <svg lucideCpu class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('web_texts') { <svg lucideFileText class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('ai_assistant') { <svg lucideSparkles class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('users') { <svg lucideUsersRound class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                    @case ('system') { <svg lucideServer class="h-4 w-4" [ngClass]="activeSection() === item.id ? 'text-[#00DA5E]' : 'text-white/40'"></svg> }
+                  }
+                  {{ item.label }}
+                  @if (item.id === 'review' && reviewRecords().length > 0) {
+                    <span class="ml-auto h-4 min-w-4 px-1 rounded-full bg-[#00DA5E] text-[0.55rem] font-black text-[#291242] flex items-center justify-center animate-pulse">
+                      {{ reviewRecords().length }}
+                    </span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </nav>
+
+      <!-- User Info & Action Settings -->
+      <div class="border-t border-white/10 px-4 py-4 bg-black/10">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="h-8 w-8 rounded-full flex items-center justify-center shrink-0 ring-1 ring-white/10" [ngClass]="getAvatarColor(session()?.fullName)">
+            <span class="text-[0.65rem] font-black text-white">{{ getInitials(session()?.fullName) }}</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold text-white truncate">{{ session()?.fullName }}</p>
+            <p class="font-alternate text-[0.62rem] font-bold uppercase tracking-widest" [ngClass]="getRoleColorClass(roleId)">
+              {{ getRoleLabel(roleId) }}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          (click)="showPasswordModal.set(true)"
+          class="w-full flex items-center justify-center gap-2 rounded-xl bg-white/8 hover:bg-white/12 px-3 py-2 text-xs font-bold text-white/80 hover:text-white transition mb-2 cursor-pointer"
+        >
+          <svg lucideLock class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+          Cambiar contraseña
+        </button>
+        
+        <button
+          type="button"
+          (click)="handleLogout()"
+          class="w-full flex items-center justify-center gap-2 rounded-xl bg-white/8 hover:bg-white/12 px-3 py-2 text-xs font-bold text-white/80 hover:text-white transition cursor-pointer"
+        >
+          <svg lucideLogOut class="text-[#00DA5E] h-3.5 w-3.5"></svg>
+          Cerrar sesión
+        </button>
+
+        <!-- API status indicator -->
+        <div class="mt-3 flex items-center gap-2 px-1">
+          <span class="h-1.5 w-1.5 rounded-full animate-pulse" [ngClass]="schemaOnline() ? 'bg-[#00DA5E]' : 'bg-rose-400'"></span>
+          <p class="text-[0.58rem] text-white/40 truncate">{{ apiStatus() }}</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ────────────────────────────────────────── -->
+    <main class="flex-1 overflow-y-auto flex flex-col h-full">
+      
+      <!-- Topbar Header -->
+      <header class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-3.5 flex items-center justify-between gap-4">
+        <div>
+          <h1 class="font-alternate text-sm uppercase tracking-wider font-bold text-slate-800">
+            @if (activeSection() === 'monitor') { Dashboard }
+            @if (activeSection() === 'ecosystem') { Mapa ecosistémico }
+            @if (activeSection() === 'communications') { Comunicaciones }
+            @if (activeSection() === 'entities') { Entidades del Ecosistema }
+            @if (activeSection() === 'review') { Bandeja de revisión }
+            @if (activeSection() === 'users') { Gestión de usuarios }
+            @if (activeSection() === 'system') { Panel de sistema }
+            @if (activeSection() === 'governance') { Solicitudes y Vinculaciones }
+            @if (activeSection() === 'web_texts') { Administración de textos }
+            @if (activeSection() === 'ai_assistant') { Asistente de Importación IA }
+          </h1>
+          <p class="text-[0.6rem] text-slate-400 font-medium mt-0.5">PNMC · Entorno administrativo interno</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            (click)="refreshAdminBackend()"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-[#291242] hover:text-[#291242] transition cursor-pointer"
+          >
+            <svg lucideRefreshCw class="h-3 w-3"></svg>
+            Actualizar
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Area Switcher -->
+      <div class="flex-1 px-6 py-6 max-w-[84rem] mx-auto w-full overflow-y-auto">
+        
+        <!-- Tab: monitor -->
+        @if (activeSection() === 'monitor') {
+          <app-admin-monitor
+            [monitor]="monitor()"
+            [apiStatus]="apiStatus()"
+            [divipola]="divipola()"
+            [userRole]="roleId"
+            (refresh)="refreshAdminBackend()"
+          ></app-admin-monitor>
+        }
+
+        <!-- Tab: ecosystem -->
+        @if (activeSection() === 'ecosystem') {
+          <div class="space-y-5">
+            <div>
+              <h2 class="text-lg font-black text-slate-900 font-alternate uppercase tracking-wide">Mapa ecosistémico</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Organizaciones, festivales, mercados, escuelas, redes de de lutería y registros territoriales.</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+              @for (mod of getAreaModules('ecosystem'); track mod.id) {
+                <button
+                  type="button"
+                  (click)="selectedModuleId.set(mod.id)"
+                  class="rounded-xl border px-4 py-2 text-xs font-bold transition cursor-pointer"
+                  [ngClass]="selectedModuleId() === mod.id
+                    ? 'border-[#291242] bg-[#291242] text-white shadow-xs'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-[#291242]/40 hover:text-[#291242]'"
+                >
+                  {{ mod.label }}
+                </button>
+              }
+            </div>
+
+            <app-admin-records-panel
+              [module]="getSelectedModule('ecosystem')"
+              [roleId]="roleId"
+              [divipola]="divipola()"
+              [session]="session()"
+              (onLocalReviewItem)="handleReviewRecord($event)"
+            ></app-admin-records-panel>
+          </div>
+        }
+
+        <!-- Tab: communications -->
+        @if (activeSection() === 'communications') {
+          <div class="space-y-5">
+            <div>
+              <h2 class="text-lg font-black text-slate-900 font-alternate uppercase tracking-wide">Comunicaciones y prensa</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Agenda, noticias, álbumes, recursos editoriales y piezas visibles en la web pública.</p>
+            </div>
+            
+            <div class="flex flex-wrap gap-2">
+              @for (mod of getAreaModules('communications'); track mod.id) {
+                <button
+                  type="button"
+                  (click)="selectedModuleId.set(mod.id)"
+                  class="rounded-xl border px-4 py-2 text-xs font-bold transition cursor-pointer"
+                  [ngClass]="selectedModuleId() === mod.id
+                    ? 'border-[#291242] bg-[#291242] text-white shadow-xs'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-[#291242]/40 hover:text-[#291242]'"
+                >
+                  {{ mod.label }}
+                </button>
+              }
+            </div>
+
+            <app-admin-records-panel
+              [module]="getSelectedModule('communications')"
+              [roleId]="roleId"
+              [divipola]="divipola()"
+              [session]="session()"
+              (onLocalReviewItem)="handleReviewRecord($event)"
+            ></app-admin-records-panel>
+          </div>
+        }
+
+        <!-- Tab: entities -->
+        @if (activeSection() === 'entities') {
+          <div class="space-y-5">
+            <div>
+              <h2 class="text-lg font-black text-slate-900 font-alternate uppercase tracking-wide">Entidades del ecosistema</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Perfil base: organizaciones, escuelas, lutieres, festivales, mercados, espacios, colectivos e individuos.</p>
+            </div>
+
+            <!-- Filters row -->
+            <div class="rounded-xl border border-slate-200 bg-white p-4">
+              <div class="grid gap-3 sm:grid-cols-4">
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="entity-filter-type">Tipo</label>
+                  <select id="entity-filter-type" [(ngModel)]="entityFilters().entityType" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] outline-hidden transition">
+                    <option value="">Todos</option>
+                    @for (t of [
+                      { id: 'organizacion', label: 'Organización' },
+                      { id: 'escuela_musica', label: 'Escuela de música' },
+                      { id: 'lutier', label: 'Lutier' },
+                      { id: 'festival', label: 'Festival' },
+                      { id: 'mercado_musical', label: 'Mercado musical' },
+                      { id: 'espacio', label: 'Espacio' },
+                      { id: 'colectivo', label: 'Colectivo' },
+                      { id: 'individuo', label: 'Individuo' }
+                    ]; track t.id) {
+                      <option [value]="t.id">{{ t.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="entity-filter-status">Estado</label>
+                  <select id="entity-filter-status" [(ngModel)]="entityFilters().status" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] outline-hidden transition">
+                    <option value="">Todos</option>
+                    @for (item of [
+                      { key: 'borrador', label: 'Borrador' },
+                      { key: 'en_revision', label: 'En revisión' },
+                      { key: 'ajustes_solicitados', label: 'Ajustes solicitados' },
+                      { key: 'aprobado', label: 'Aprobado' },
+                      { key: 'publicado', label: 'Publicado' },
+                      { key: 'rechazado', label: 'Rechazado' },
+                      { key: 'archivado', label: 'Archivado' }
+                    ]; track item.key) {
+                      <option [value]="item.key">{{ item.label }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5" for="entity-filter-q">Buscar</label>
+                  <input id="entity-filter-q" type="text" [(ngModel)]="entityFilters().q" placeholder="Nombre, email…" class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-[#291242] focus:ring-1 focus:ring-[#291242] outline-hidden transition" />
+                </div>
+                <div class="flex items-end gap-2">
+                  <button type="button" (click)="loadEntities()" class="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#291242] hover:bg-[#3d1a63] px-4 py-2.5 text-xs font-black text-white transition cursor-pointer">
+                    <svg lucideSearch class="h-3.5 w-3.5"></svg>
+                    Buscar
+                  </button>
+                  <button type="button" (click)="startCreateEntity()" class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-600 hover:border-[#291242] transition cursor-pointer">
+                    <svg lucidePlus class="h-3.5 w-3.5"></svg>
+                  </button>
+                </div>
+              </div>
+              @if (entityMessage()) {
+                <p class="mt-3 text-xs text-slate-500 font-medium">{{ entityMessage() }}</p>
+              }
+            </div>
+
+            <!-- Entities table -->
+            <div class="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs">
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50">
+                      <th class="text-left px-5 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Entidad</th>
+                      <th class="text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Tipo</th>
+                      <th class="text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Estado</th>
+                      <th class="hidden md:table-cell text-left px-3 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Territorio</th>
+                      <th class="text-right px-5 py-3 text-[0.62rem] font-black uppercase tracking-widest text-slate-400">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-50">
+                    @for (entity of entities(); track entity.id) {
+                      <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="px-5 py-3.5">
+                          <button type="button" (click)="editEntity(entity)" class="text-left font-semibold text-slate-900 hover:text-[#291242] hover:underline transition cursor-pointer">
+                            {{ entity.name }}
+                          </button>
+                          <p class="text-[0.65rem] text-slate-400 mt-0.5">{{ entity.contactEmail || 'Sin correo' }}</p>
+                        </td>
+                        <td class="px-3 py-3.5">
+                          <span class="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">{{ entity.entityType }}</span>
+                        </td>
+                        <td class="px-3 py-3.5">
+                          <span class="inline-flex rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider border" [ngClass]="statusPillClass(entity.status)">
+                            {{ statusLabel(entity.status) }}
+                          </span>
+                        </td>
+                        <td class="hidden md:table-cell px-3 py-3.5 text-xs text-slate-500 font-medium">
+                          {{ formatLocation(entity.department, entity.municipality) }}
+                        </td>
+                        <td class="px-5 py-3.5 text-right">
+                          <div class="inline-flex items-center gap-1">
+                            <button type="button" (click)="editEntity(entity)" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:border-[#291242] transition cursor-pointer">
+                              <svg lucideEdit3 class="h-3 w-3"></svg>
+                            </button>
+                            @if (canApprove) {
+                              <button type="button" (click)="handleEntityStatus(entity, 'aprobado')" class="rounded-lg bg-[#00DA5E]/15 border border-[#00DA5E]/30 px-2.5 py-1.5 text-xs font-bold text-[#291242] hover:bg-[#00DA5E]/25 transition cursor-pointer">
+                                <svg lucideCheckCircle2 class="h-3 w-3"></svg>
+                              </button>
+                            }
+                          </div>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colSpan="5" class="px-5 py-10 text-center text-sm text-slate-400">No hay entidades registradas. Realiza una búsqueda.</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Entities Form Editor modal/panel -->
+            @if (showEntityForm()) {
+              <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm animate-fade-in">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 class="text-sm font-black text-slate-900">{{ entityFormValues().id ? 'Editar entidad' : 'Nueva entidad' }}</h3>
+                  <button type="button" (click)="showEntityForm.set(false)" class="rounded-xl border border-slate-200 p-2 text-slate-400 hover:text-slate-700 transition cursor-pointer">
+                    <svg lucideX class="h-4 w-4"></svg>
+                  </button>
+                </div>
+
+                <form (submit)="handleSaveEntity($event)" class="space-y-4 text-sm">
+                  
+                  <!-- Basic fields -->
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Nombre visible *</label>
+                      <input type="text" [(ngModel)]="entityFormValues().name" name="entName" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Tipo de entidad *</label>
+                      <select [(ngModel)]="entityFormValues().entityType" name="entType" required class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden">
+                        <option value="organizacion">Organización</option>
+                        <option value="escuela_musica">Escuela de música</option>
+                        <option value="lutier">Lutier</option>
+                        <option value="festival">Festival</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Correo electrónico</label>
+                      <input type="email" [(ngModel)]="entityFormValues().contactEmail" name="entEmail" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Teléfono</label>
+                      <input type="text" [(ngModel)]="entityFormValues().contactPhone" name="entPhone" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden" />
+                    </div>
+                  </div>
+
+                  <!-- Location -->
+                  <div class="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Departamento</label>
+                      <select [(ngModel)]="entityFormValues().department" (change)="entityFormValues().municipality = ''" name="entDept" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden">
+                        <option value="">Seleccione departamento</option>
+                        @for (d of departmentNames; track d) {
+                          <option [value]="d">{{ d }}</option>
+                        }
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Municipio</label>
+                      <select [(ngModel)]="entityFormValues().municipality" name="entMuni" [disabled]="!entityFormValues().department" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden">
+                        <option value="">Seleccione municipio</option>
+                        @for (m of divipola()[entityFormValues().department] || []; track m) {
+                          <option [value]="m">{{ m }}</option>
+                        }
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Descripción</label>
+                    <textarea rows="3" [(ngModel)]="entityFormValues().description" name="entDesc" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900 focus:border-[#291242] outline-hidden resize-none"></textarea>
+                  </div>
+
+                  <!-- Footer Save -->
+                  <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button type="button" (click)="showEntityForm.set(false)" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">Cancelar</button>
+                    <button type="submit" class="rounded-xl bg-[#291242] text-white px-5 py-2.5 text-xs font-black hover:bg-[#3d1a63] transition cursor-pointer">Guardar entidad</button>
+                  </div>
+                </form>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Tab: review -->
+        @if (activeSection() === 'review') {
+          <app-admin-review-queue
+            [records]="reviewRecords()"
+            [modules]="ADMIN_MODULES"
+            [canApprove]="canApprove"
+            (onStatusChange)="handleReviewStatus($event)"
+            (onReviewClick)="reviewingRecord.set($event)"
+          ></app-admin-review-queue>
+        }
+
+        <!-- Tab: users -->
+        @if (activeSection() === 'users') {
+          <app-admin-users-panel [enabled]="roleId === 'webmaster'"></app-admin-users-panel>
+        }
+
+        <!-- Tab: system -->
+        @if (activeSection() === 'system') {
+          <app-admin-system-panel
+            [schemaOnline]="schemaOnline()"
+            [stats]="stats()"
+            [divipola]="divipola()"
+          ></app-admin-system-panel>
+        }
+
+        <!-- Tab: governance -->
+        @if (activeSection() === 'governance') {
+          <app-admin-governance-panel [enabled]="roleId === 'webmaster' || roleId === 'gestor_interno'"></app-admin-governance-panel>
+        }
+
+        <!-- Tab: web_texts -->
+        @if (activeSection() === 'web_texts') {
+          <app-admin-web-texts-panel
+            [enabled]="roleId === 'webmaster' || roleId === 'gestor_interno'"
+            [session]="session()"
+          ></app-admin-web-texts-panel>
+        }
+
+        <!-- Tab: ai_assistant -->
+        @if (activeSection() === 'ai_assistant') {
+          <app-admin-ai-assistant-panel [divipola]="divipola()"></app-admin-ai-assistant-panel>
+        }
+
+      </div>
+    </main>
+
+    <!-- Global Password Change Modal -->
+    @if (showPasswordModal()) {
+      <div class="fixed inset-0 z-[7000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in" (click)="showPasswordModal.set(false)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in" (click)="$event.stopPropagation()">
+          <div class="bg-[#291242] px-6 py-4 flex items-center justify-between text-white border-b border-white/10">
+            <div class="flex items-center gap-2">
+              <svg lucideLock class="text-[#00DA5E] h-4 w-4"></svg>
+              <h3 class="font-alternate text-sm uppercase tracking-wider font-bold">Cambiar Contraseña</h3>
+            </div>
+            <button type="button" (click)="showPasswordModal.set(false)" class="text-white/60 hover:text-white transition cursor-pointer">
+              <svg lucideX class="h-4 w-4"></svg>
+            </button>
+          </div>
+          <div class="p-6 space-y-4">
+            <app-external-user-dashboard
+              [session]="session()"
+              [divipola]="divipola()"
+              [notifications]="notifications()"
+              (onPasswordChange)="handlePasswordChange($event); showPasswordModal.set(false);"
+            ></app-external-user-dashboard>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Record Review Decisions Modal Overlay -->
+    @if (reviewingRecord()) {
+      <div class="fixed inset-0 z-[5000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in" (click)="reviewingRecord.set(null)">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in" (click)="$event.stopPropagation()">
+          
+          <!-- Header -->
+          <div class="bg-[#291242] px-6 py-5 flex items-start justify-between text-white border-b border-white/10">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider border" [ngClass]="statusPillClass(reviewingRecord().status)">
+                  {{ statusLabel(reviewingRecord().status) }}
+                </span>
+                <span class="text-[0.62rem] font-bold uppercase tracking-widest text-[#00DA5E]">Evaluación de Registro</span>
+              </div>
+              <h2 class="font-alternate text-base uppercase font-bold tracking-wide mt-1.5">{{ reviewingRecord().title || 'Evaluación' }}</h2>
+              <p class="text-xs text-white/60 mt-0.5">Por {{ reviewingRecord().owner }}</p>
+            </div>
+            <button type="button" (click)="reviewingRecord.set(null)" class="rounded-xl border border-white/20 p-2 text-white/60 hover:text-white hover:border-white transition shrink-0 cursor-pointer">
+              <svg lucideX class="h-4 w-4"></svg>
+            </button>
+          </div>
+
+          <!-- Body Form Decisions -->
+          <div class="flex-1 overflow-y-auto p-6 space-y-6 text-sm text-slate-700">
+            <p class="text-xs text-slate-500">Evalúa el registro. Puedes aprobar, solicitar ajustes específicos por correo electrónico o rechazar.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Comentarios generales</label>
+                <textarea #genComment rows="3" placeholder="Aprobado sin observaciones..." class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 outline-hidden focus:border-[#291242] resize-none"></textarea>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <input id="send-notif-check" type="checkbox" #sendNotifChecked checked class="rounded-sm border-slate-300 text-[#291242]" />
+                <label for="send-notif-check" class="text-xs font-bold uppercase tracking-wider text-slate-500">Enviar notificación por correo electrónico al creador</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="bg-slate-50 border-t border-slate-100 px-6 py-4 flex items-center justify-end gap-2">
+            <button type="button" (click)="reviewingRecord.set(null)" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer">Cancelar</button>
+            <button type="button" (click)="handleReviewSubmit({ id: reviewingRecord().id, status: 'rechazado', reviewComments: { sendNotification: sendNotifChecked.checked, generalComment: genComment.value || 'Rechazado' } })" class="rounded-xl bg-red-600 text-white px-4 py-2.5 text-xs font-bold hover:bg-red-700 transition cursor-pointer">Rechazar</button>
+            <button type="button" (click)="handleReviewSubmit({ id: reviewingRecord().id, status: 'ajustes_solicitados', reviewComments: { sendNotification: sendNotifChecked.checked, generalComment: genComment.value || 'Ajustes solicitados', fieldAdjustments: { name: 'Revisar ortografía de nombre' } } })" class="rounded-xl bg-amber-500 text-white px-4 py-2.5 text-xs font-bold hover:bg-amber-600 transition cursor-pointer">Solicitar Ajustes</button>
+            <button type="button" (click)="handleReviewSubmit({ id: reviewingRecord().id, status: 'aprobado', reviewComments: { sendNotification: sendNotifChecked.checked, generalComment: genComment.value || 'Aprobado sin observaciones' } })" class="rounded-xl bg-[#00DA5E] text-slate-950 px-5 py-2.5 text-xs font-black uppercase font-alternate tracking-wide hover:bg-[#00c454] transition cursor-pointer">Aprobar</button>
+          </div>
+
+        </div>
+      </div>
+    }
+
+    <!-- Global Toast Alert Banner -->
+    @if (reviewToast().show) {
+      <div class="fixed bottom-6 right-6 z-[6000] max-w-md bg-slate-950/95 backdrop-blur-md text-white rounded-2xl border shadow-2xl p-4 flex items-start gap-3 animate-fade-in border-emerald-500/30">
+        <div class="h-8 w-8 rounded-full flex items-center justify-center shrink-0 border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+          <svg lucideMail class="h-4 w-4"></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs font-bold text-slate-100">Notificación de Revisión</p>
+          <p class="text-[0.68rem] text-slate-300 mt-0.5 leading-relaxed">{{ reviewToast().message }}</p>
+        </div>
+        <button
+          type="button"
+          (click)="reviewToast.set({ show: false, type: 'success', message: '' })"
+          class="text-white/40 hover:text-white/80 transition cursor-pointer"
+        >
+          <svg lucideX class="h-4 w-4"></svg>
+        </button>
+      </div>
+    }
+
+    <!-- Onboarding welcome tour overlay modal -->
+    @if (showWelcomeTour() && currentTourStep) {
+      <div class="fixed inset-0 z-[8000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+        <div 
+          class="w-full max-w-lg bg-gradient-to-br from-[#291242] to-[#1a0a2c] text-white rounded-3xl shadow-2xl border border-white/10 overflow-hidden animate-fade-in flex flex-col relative"
+          style="box-shadow: 0 0 50px rgba(0, 218, 94, 0.15), inset 0 0 20px rgba(255, 255, 255, 0.05);"
+        >
+          <!-- Decorative Top Glow -->
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[#00DA5E]/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <!-- Header -->
+          <div class="px-6 pt-6 flex items-center justify-between relative z-10">
+            <span class="rounded-full bg-[#00DA5E]/15 border border-[#00DA5E]/30 px-3 py-1 text-[0.62rem] font-bold text-[#00DA5E] uppercase tracking-widest">
+              {{ currentTourStep.badge }}
+            </span>
+            <button 
+              type="button"
+              (click)="tourClose()"
+              class="text-white/40 hover:text-white/80 transition p-1.5 rounded-lg bg-white/5 border border-[#00DA5E]/20 hover:border-[#00DA5E]/30 cursor-pointer"
+            >
+              <svg lucideX class="h-4 w-4"></svg>
+            </button>
+          </div>
+          
+          <!-- Content -->
+          <div class="px-6 py-8 flex flex-col items-center text-center relative z-10 flex-1 space-y-6">
+            <div class="h-16 w-16 bg-[#00DA5E]/10 border border-[#00DA5E]/20 text-[#00DA5E] rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-transform duration-300">
+              @switch (currentTourStep.title) {
+                @case ('Consola de Webmaster') { <svg lucideShieldCheck class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Administración Central de Textos') { <svg lucideFileText class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Gestión de Solicitudes y Vinculaciones') { <svg lucideCpu class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Moderador de Componentes') { <svg lucideClipboardList class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Bandeja de Gobernanza y Solicitudes') { <svg lucideCpu class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Portal de Aliados Institucionales') { <svg lucideBuilding2 class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Vinculaciones y Cargas Colaborativas') { <svg lucideNetwork class="h-7 w-7 animate-pulse"></svg> }
+                @case ('¡Bienvenido al Portal de Colaboradores!') { <svg lucideSparkles class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Paso 1: Confirmación de Correo y Cuenta') { <svg lucideMail class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Paso 2: Caracterización de tu Entidad') { <svg lucideBuilding2 class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Paso 3: Escaneo Histórico Automático') { <svg lucideSearch class="h-7 w-7 animate-pulse"></svg> }
+                @case ('Paso 4: Reclamar Coincidencias en Borrador') { <svg lucideClipboardList class="h-7 w-7 animate-pulse"></svg> }
+                @default { <svg lucideShieldCheck class="h-7 w-7 animate-pulse"></svg> }
+              }
+            </div>
+            
+            <div class="space-y-2">
+              <h2 class="font-alternate text-lg font-black uppercase tracking-wider text-white">
+                {{ currentTourStep.title }}
+              </h2>
+              <p class="text-xs text-white/70 leading-relaxed max-w-sm">
+                {{ currentTourStep.description }}
+              </p>
+            </div>
+            
+            <!-- Details Bullet Points Card -->
+            <div class="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-left space-y-2.5 backdrop-blur-xs">
+              @for (detail of currentTourStep.details; track $index) {
+                <div class="flex items-start gap-2.5">
+                  <span class="h-4 w-4 rounded-full bg-[#00DA5E]/25 text-[#00DA5E] flex items-center justify-center text-[0.55rem] font-black shrink-0 mt-0.5 border border-[#00DA5E]/35">✓</span>
+                  <p class="text-[0.7rem] font-medium text-white/85 leading-relaxed">{{ detail }}</p>
+                </div>
+              }
+            </div>
+          </div>
+          
+          <!-- Footer Actions -->
+          <div class="bg-black/20 border-t border-white/10 px-6 py-5 flex items-center justify-between relative z-10">
+            <button
+              type="button"
+              (click)="tourClose()"
+              class="text-white/40 hover:text-white/80 transition text-xs font-bold uppercase tracking-wider cursor-pointer"
+            >
+              Omitir
+            </button>
+            
+            <!-- Step Indicator dots -->
+            <div class="flex items-center gap-1.5">
+              @for (stepDot of tourSteps; track $index) {
+                <span 
+                  class="h-1.5 rounded-full transition-all duration-300"
+                  [ngClass]="$index === currentTourStepIndex ? 'w-4 bg-[#00DA5E]' : 'w-1.5 bg-white/20'"
+                ></span>
+              }
+            </div>
+            
+            <div class="flex items-center gap-2">
+              @if (tourStep() > 1) {
+                <button
+                  type="button"
+                  (click)="tourPrev()"
+                  class="rounded-xl border border-white/10 hover:bg-white/5 px-3 py-2 text-xs font-bold text-white transition flex items-center justify-center cursor-pointer"
+                >
+                  Atrás
+                </button>
+              }
+              <button
+                type="button"
+                (click)="tourNext()"
+                class="rounded-xl bg-[#00DA5E] hover:bg-[#00c454] px-4 py-2 text-xs font-black text-[#1a0a2c] transition flex items-center justify-center gap-1 uppercase tracking-wider shadow-md cursor-pointer"
+              >
+                {{ tourStep() === tourSteps.length ? 'Comenzar' : 'Siguiente' }}
+                <svg lucideChevronRight class="h-3 w-3"></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Floating Onboarding Tour Button -->
+    <button
+      type="button"
+      (click)="tourStep.set(1); showWelcomeTour.set(true);"
+      class="fixed bottom-6 right-6 z-[5000] group flex items-center gap-2 rounded-full bg-[#00DA5E] hover:bg-[#00c454] px-3.5 py-3.5 text-xs font-black text-[#1a0a2c] shadow-2xl transition-all duration-300 hover:scale-105 cursor-pointer"
+      title="Ver tutorial de bienvenida"
+      style="box-shadow: 0 10px 25px -5px rgba(0, 218, 94, 0.4), 0 0 15px rgba(0, 218, 94, 0.2);"
+    >
+      <svg lucideSparkles class="animate-pulse h-4 w-4"></svg>
+      <span class="max-w-0 overflow-hidden font-alternate uppercase tracking-wider transition-all duration-500 group-hover:max-w-[120px] whitespace-nowrap text-[0.68rem] font-bold">
+        Tutorial
+      </span>
+    </button>
+
+  </div>
+}

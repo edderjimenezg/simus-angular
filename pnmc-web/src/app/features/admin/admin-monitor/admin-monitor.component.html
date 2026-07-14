@@ -1,0 +1,358 @@
+@if (userRole === 'lider') {
+  <!-- LIDER DASHBOARD VIEW -->
+  <div class="space-y-6 text-left">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Dashboard de Componentes</h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ apiStatus }}</p>
+      </div>
+      <button
+        type="button"
+        (click)="refresh.emit()"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:border-[#00DA5E] hover:text-[#291242] transition cursor-pointer"
+      >
+        <svg lucideRefreshCw size="13"></svg>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      @for (kpi of leaderKpis; track kpi.label) {
+        <div class="rounded-xl border border-slate-200 bg-white p-5 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
+            <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">{{ kpi.label }}</p>
+            <div class="h-8 w-8 rounded-lg flex items-center justify-center" [style.background-color]="kpi.accent + '18'">
+              @switch (kpi.label) {
+                @case ('Registros totales') { <svg lucideDatabase size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Registros Totales') { <svg lucideDatabase size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Entidades base') { <svg lucideBuilding2 size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Usuarios admin') { <svg lucideUsersRound size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Territorios') { <svg lucideMap size="15" [style.color]="kpi.accent"></svg> }
+                @case ('En evaluación') { <svg lucideClipboardList size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Borradores') { <svg lucideFileText size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Departamentos Activos') { <svg lucideMap size="15" [style.color]="kpi.accent"></svg> }
+              }
+            </div>
+          </div>
+          <p class="text-3xl font-black text-slate-900 leading-none">{{ kpi.value }}</p>
+          <p class="text-xs text-slate-400">{{ kpi.detail }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Charts and operational summary -->
+    <div class="grid lg:grid-cols-2 gap-6">
+      <!-- Records by Department -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Distribución de Registros por Departamento</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Cantidad de registros geolocalizados en el mapa</p>
+        </div>
+        <div class="space-y-3.5 max-h-[300px] overflow-y-auto pr-1">
+          @for (dept of departmentStats; track dept.name) {
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-xs font-bold text-slate-700">
+                <span>{{ dept.name }}</span>
+                <span>{{ dept.count }} registros</span>
+              </div>
+              <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-1000"
+                  [style.width.%]="dept.percentage"
+                  [style.background-color]="dept.accent"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Modules Operational Summary -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Resumen Operativo de Módulos</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Breakdown de registros bajo tu liderazgo</p>
+        </div>
+        <div class="divide-y divide-slate-100">
+          @for (mod of modules; track mod.id) {
+            <div class="py-2.5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs font-bold text-slate-800">{{ mod.label }}</p>
+                <p class="text-[0.65rem] text-slate-400">{{ mod.total || 0 }} registros activos</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="inline-flex rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-[0.62rem] font-bold border border-emerald-200">
+                  Aprobados: {{ getApprovedCount(mod) }}
+                </span>
+                <span class="inline-flex rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-[0.62rem] font-bold border border-amber-200">
+                  En evaluación: {{ getPendingReviewCount(mod) }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Territorial Claims Table -->
+    <div class="rounded-xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
+      <div>
+        <h3 class="text-sm font-black text-slate-900">Solicitudes de Vinculación y Reclamaciones de la Red</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Control de solicitudes de vinculación hechas por colaboradores externos en su territorio</p>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-[0.62rem] font-bold uppercase tracking-wider text-slate-400">
+              <th scope="col" class="text-left px-4 py-3">Colaborador / Solicitante</th>
+              <th scope="col" class="text-left px-3 py-3">Tipo de Registro</th>
+              <th scope="col" class="text-left px-3 py-3">Nombre del Proceso</th>
+              <th scope="col" class="text-left px-3 py-3">Fecha Solicitud</th>
+              <th scope="col" class="text-left px-3 py-3">Ubicación (DIVIPOLA)</th>
+              <th scope="col" class="text-right px-4 py-3">Estado</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            <tr class="hover:bg-slate-50/50 transition">
+              <td class="px-4 py-3.5 font-semibold text-slate-800">Carlos Vives</td>
+              <td class="px-3 py-3.5 text-slate-500">Festival</td>
+              <td class="px-3 py-3.5 font-semibold text-slate-800">Festival de Cuerdas y Viento</td>
+              <td class="px-3 py-3.5 text-slate-400 font-mono">2026-05-26</td>
+              <td class="px-3 py-3.5 text-slate-500">Villa de Leyva, Boyacá</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 text-[0.6rem] font-bold">
+                  Aprobado
+                </span>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition">
+              <td class="px-4 py-3.5 font-semibold text-slate-800">Asociación Cantos de la Tierra</td>
+              <td class="px-3 py-3.5 text-slate-500">Escuela de Música</td>
+              <td class="px-3 py-3.5 font-semibold text-slate-800">Escuela Tradicional Sandoná</td>
+              <td class="px-3 py-3.5 text-slate-400 font-mono">2026-05-25</td>
+              <td class="px-3 py-3.5 text-slate-500">Sandoná, Nariño</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 text-[0.6rem] font-bold">
+                  En evaluación
+                </span>
+              </td>
+            </tr>
+            <tr class="hover:bg-slate-50/50 transition">
+              <td class="px-4 py-3.5 font-semibold text-slate-800">Luthier Diego Rosero</td>
+              <td class="px-3 py-3.5 text-slate-500">Lutier</td>
+              <td class="px-3 py-3.5 font-semibold text-slate-800">Taller Lutier Diego Rosero</td>
+              <td class="px-3 py-3.5 text-slate-400 font-mono">2026-05-24</td>
+              <td class="px-3 py-3.5 text-slate-500">Pasto, Nariño</td>
+              <td class="px-4 py-3.5 text-right">
+                <span class="inline-flex rounded-full bg-slate-50 text-slate-600 border border-slate-200 px-2 py-0.5 text-[0.6rem] font-bold">
+                  Pendiente
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+} @else {
+  <!-- GENERAL MONITOR VIEW -->
+  <div class="space-y-6 text-left">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-black text-slate-900">Dashboard de monitoreo</h2>
+        <p class="text-xs text-slate-400 mt-0.5">{{ apiStatus }}</p>
+      </div>
+      <button
+        type="button"
+        (click)="refresh.emit()"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:border-[#00DA5E] hover:text-[#291242] transition cursor-pointer"
+      >
+        <svg lucideRefreshCw size="13"></svg>
+        Actualizar
+      </button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      @for (kpi of kpis; track kpi.label) {
+        <div class="rounded-xl border border-slate-200 bg-white p-5 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
+            <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">{{ kpi.label }}</p>
+            <div class="h-8 w-8 rounded-lg flex items-center justify-center" [style.background-color]="kpi.accent + '18'">
+              @switch (kpi.label) {
+                @case ('Registros totales') { <svg lucideDatabase size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Registros Totales') { <svg lucideDatabase size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Entidades base') { <svg lucideBuilding2 size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Usuarios admin') { <svg lucideUsersRound size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Territorios') { <svg lucideMap size="15" [style.color]="kpi.accent"></svg> }
+                @case ('En evaluación') { <svg lucideClipboardList size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Borradores') { <svg lucideFileText size="15" [style.color]="kpi.accent"></svg> }
+                @case ('Departamentos Activos') { <svg lucideMap size="15" [style.color]="kpi.accent"></svg> }
+              }
+            </div>
+          </div>
+          <p class="text-3xl font-black text-slate-900 leading-none">{{ kpi.value }}</p>
+          <p class="text-xs text-slate-400">{{ kpi.detail }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Health Panels -->
+    <div class="grid sm:grid-cols-3 gap-4">
+      <!-- API -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">API Administrativa</p>
+          <svg lucideServer size="13" class="text-slate-300"></svg>
+        </div>
+        <span class="flex items-center gap-1.5">
+          <span [class]="'inline-block h-2 w-2 rounded-full animate-pulse ' + getHealthColor(apiOk, api.latencyMs || 0)"></span>
+          <span class="text-xs font-semibold text-slate-500">{{ getHealthLabel(apiOk, api.latencyMs || 0) }}</span>
+        </span>
+        <div class="mt-3 space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Latencia</span>
+            <span class="font-bold text-slate-700">{{ api.latencyMs || 0 }} ms</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Estado</span>
+            <span class="font-bold text-slate-700">{{ api.status || '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">Base de datos</p>
+          <svg lucideDatabase size="13" class="text-slate-300"></svg>
+        </div>
+        <span class="flex items-center gap-1.5">
+          <span [class]="'inline-block h-2 w-2 rounded-full animate-pulse ' + getHealthColor(dbOk, 0)"></span>
+          <span class="text-xs font-semibold text-slate-500">{{ getHealthLabel(dbOk, 0) }}</span>
+        </span>
+        <div class="mt-3 space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Proveedor</span>
+            <span class="font-bold text-slate-700">{{ database.provider || '—' }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Estado</span>
+            <span class="font-bold text-slate-700">{{ database.status || '—' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Frontend -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">Frontend</p>
+          <svg lucideGlobe size="13" class="text-slate-300"></svg>
+        </div>
+        <span class="flex items-center gap-1.5">
+          <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-semibold text-slate-500">OK</span>
+        </span>
+        <div class="mt-3 space-y-1">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Estado</span>
+            <span class="font-bold text-slate-700">{{ monitor?.web?.status || 'Activo en navegador' }}</span>
+          </div>
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Env</span>
+            <span class="font-bold text-slate-700">production</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module Distribution Charts -->
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-black text-slate-900">Distribución por módulo</h3>
+          <p class="text-xs text-slate-400 mt-0.5">Estado de los registros en cada módulo</p>
+        </div>
+      </div>
+      <div class="divide-y divide-slate-100">
+        @for (entry of groupedModules | keyvalue; track entry.key) {
+          <div>
+            <div class="px-5 py-2 bg-slate-50">
+              <p class="text-[0.6rem] font-black uppercase tracking-widest text-slate-400">{{ entry.key }}</p>
+            </div>
+            @for (mod of entry.value; track mod.id) {
+              <div class="px-5 py-3.5 flex items-center gap-4">
+                <div class="w-40 shrink-0">
+                  <p class="text-sm font-semibold text-slate-800 truncate">{{ mod.label }}</p>
+                  <p class="text-xs text-slate-400">{{ mod.total }} registros</p>
+                </div>
+                <div class="flex-1 space-y-1.5">
+                  <!-- Bar chart drawing -->
+                  <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                    @for (seg of getSegments(mod.statuses, mod.total); track seg.code) {
+                      <div
+                        [style.width.%]="seg.width"
+                        [style.background-color]="seg.color"
+                        class="h-full"
+                      ></div>
+                    }
+                  </div>
+                  <div class="flex flex-wrap gap-x-3 gap-y-0.5">
+                    @for (s of mod.statuses; track s.code) {
+                      @if (s.count > 0) {
+                        <span class="text-[0.6rem] font-bold text-slate-400">
+                          {{ s.label }}: {{ s.count }}
+                        </span>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+        @if (modules.length === 0) {
+          <div class="px-5 py-8 text-center text-sm text-slate-400">
+            Sin datos de módulos disponibles. Conecta el backend para ver métricas.
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Recent Activity Feed -->
+    <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div class="border-b border-slate-100 px-5 py-4">
+        <h3 class="text-sm font-black text-slate-900">Actividad reciente</h3>
+        <p class="text-xs text-slate-400 mt-0.5">Últimas operaciones registradas en la auditoría</p>
+      </div>
+      <div class="divide-y divide-slate-100">
+        @for (item of recentAudit; track item.id) {
+          <div class="flex items-center gap-4 px-5 py-3">
+            <div class="h-7 w-7 rounded-full bg-[#291242]/8 flex items-center justify-center shrink-0">
+              <svg lucideClock size="12" class="text-[#291242]/60"></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-slate-800">
+                <span class="text-[#291242] font-black">{{ item.action }}</span>
+                · {{ item.table }}
+                @if (item.recordId) {
+                  <span class="text-slate-400"> #{{ item.recordId }}</span>
+                }
+              </p>
+            </div>
+            <p class="text-xs text-slate-400 shrink-0">{{ relativeTime(item.createdAt) }}</p>
+          </div>
+        }
+        @if (recentAudit.length === 0) {
+          <div class="px-5 py-8 text-center">
+            <svg lucideClock size="24" class="mx-auto text-slate-200 mb-2"></svg>
+            <p class="text-sm text-slate-400">Sin actividad reciente registrada</p>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}

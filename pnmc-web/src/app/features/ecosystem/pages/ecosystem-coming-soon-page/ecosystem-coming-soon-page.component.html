@@ -1,0 +1,13 @@
+<div class="min-h-screen bg-[#fbfcfb] pb-24 font-nunito">
+  <app-compact-hero [backLabel]="page().eyebrow" [current]="page().title" [title]="page().title" (onBack)="goBack()"></app-compact-hero>
+  <section class="mx-auto max-w-4xl px-6 pt-8 text-center">
+    <div class="rounded-[1.75rem] border border-slate-100 bg-white p-8 shadow-sm">
+      <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00DA5E]/10 text-[#00A849]"><svg lucideConstruction [size]="24"></svg></span>
+      <p class="mt-5 text-sm leading-relaxed text-slate-500">{{ page().description }}</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <button type="button" (click)="openMap()" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border-0 bg-[#00DA5E] px-5 py-3 font-alternate text-[0.62rem] font-bold uppercase tracking-widest text-[#291242] transition hover:bg-[#8BF784]"><svg lucideMap [size]="15"></svg> Explorar mapa ecosistémico</button>
+        <button type="button" (click)="openSchools()" class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 font-alternate text-[0.62rem] font-bold uppercase tracking-widest text-[#291242] transition hover:bg-slate-50">Ver piloto de Escuelas <svg lucideArrowRight [size]="15"></svg></button>
+      </div>
+    </div>
+  </section>
+</div>

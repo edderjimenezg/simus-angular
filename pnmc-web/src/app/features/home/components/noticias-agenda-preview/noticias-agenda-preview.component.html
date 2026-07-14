@@ -1,0 +1,186 @@
+<app-content-wrapper class="bg-white border-y border-slate-100 block">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+    
+    <!-- Sección de Noticias (Izquierda) -->
+    <div class="lg:col-span-8 flex flex-col text-left">
+      <app-section-header backgroundText="NOTICIAS" foregroundText="Actualidad" verticalContext="NEWS" [compact]="true"></app-section-header>
+      
+      @if (isLoading || isRefreshing) {
+        <app-loading-state
+          title="Cargando noticias y agenda..."
+          description="Preparamos un resumen con la información más reciente."
+        ></app-loading-state>
+      } @else if (isError) {
+        <app-error-state
+          title="No pudimos cargar la portada informativa"
+          [description]="error?.message || 'Intenta recargar en unos segundos.'"
+          (retry)="retryPreview()"
+        ></app-error-state>
+      } @else {
+        <div class="grid grid-cols-12 gap-5 mb-8">
+          @if (featuredGroup.length > 0) {
+            <!-- Artículo Principal Destacado (Ancho completo) -->
+            <article
+              (click)="onNavigateToArticle(featuredGroup[0])"
+              class="col-span-12 group cursor-pointer bg-slate-50 rounded-3xl overflow-hidden border border-slate-100 flex flex-col lg:flex-row min-h-[320px] lg:h-auto transition-all duration-700 hover:shadow-2xl"
+            >
+              <div class="lg:w-1/2 h-[220px] lg:h-auto min-h-[240px] lg:min-h-full overflow-hidden shrink-0">
+                <img [src]="featuredGroup[0].img" class="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="" />
+              </div>
+              <div class="lg:w-1/2 p-6 sm:p-8 flex flex-col justify-center text-left bg-white relative text-slate-800">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-[#00DA5E]"></div>
+                <span class="text-[0.55rem] text-[#00DA5E] font-bold uppercase tracking-[0.2em]">
+                  {{ featuredGroup[0].date }} • {{ featuredGroup[0].category }}
+                </span>
+                <h4 class="font-alternate text-2xl text-[#291242] font-bold uppercase mt-3 leading-none tracking-tight">
+                  {{ featuredGroup[0].title }}
+                </h4>
+                <p class="text-[0.75rem] text-slate-500 font-nunito mt-4 line-clamp-3 leading-relaxed">
+                  {{ featuredGroup[0].desc }}
+                </p>
+                <div class="mt-6 flex items-center gap-2 text-[0.6rem] font-bold text-[#291242] uppercase font-alternate tracking-widest group-hover:text-[#00DA5E]">
+                  Leer más
+                  <svg lucideArrowUpRight [size]="14"></svg>
+                </div>
+              </div>
+            </article>
+
+            <!-- Artículos Secundarios (Dos columnas) -->
+            @for (item of featuredGroup.slice(1, 3); track item.title; let idx = $index) {
+              <article
+                (click)="onNavigateToArticle(item)"
+                class="col-span-12 md:col-span-6 group cursor-pointer bg-white rounded-3xl overflow-hidden border border-slate-100 flex min-h-[170px] h-auto transition-all duration-500 hover:shadow-lg"
+              >
+                <div class="w-1/3 min-h-[170px] overflow-hidden shrink-0 relative">
+                  <img [src]="item.img" class="w-full h-full object-cover grayscale-[40%] brightness-95 opacity-80 group-hover:grayscale-0 group-hover:brightness-100 group-hover:opacity-100 transition-all duration-700" alt="" />
+                  <div class="absolute inset-0 bg-[#291242]/20 group-hover:opacity-0 transition-opacity duration-700"></div>
+                </div>
+                <div class="w-2/3 p-5 text-left flex flex-col justify-center relative bg-white">
+                  <span class="text-[0.45rem] font-bold text-[#00DA5E] uppercase tracking-widest">
+                    {{ item.date }}
+                  </span>
+                  <h4 class="font-alternate text-[0.9rem] text-[#291242] font-bold uppercase mt-1 leading-tight group-hover:text-[#6100D7] line-clamp-2">
+                    {{ item.title }}
+                  </h4>
+                  <p class="text-[0.65rem] text-slate-500 font-nunito mt-2 line-clamp-2 leading-relaxed">
+                    {{ item.desc }}
+                  </p>
+                  <div class="mt-2 flex items-center gap-1.5 text-[0.55rem] font-bold text-[#291242] uppercase font-alternate tracking-widest group-hover:text-[#00DA5E]">
+                    Leer más
+                    <svg lucideArrowUpRight [size]="12"></svg>
+                  </div>
+                </div>
+              </article>
+            }
+          }
+        </div>
+        
+        <div class="flex justify-start">
+          <button
+            type="button"
+            (click)="onNavigate('noticias')"
+            class="bg-white hover:bg-slate-50 text-[#291242] border border-[#291242] px-8 py-3 rounded-xl font-bold text-[0.65rem] uppercase font-alternate tracking-widest flex items-center gap-3 transition-all cursor-pointer"
+          >
+            Explorar todas las noticias
+            <svg lucideArrowRight [size]="14"></svg>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Agenda de Eventos (Derecha) -->
+    <aside class="lg:col-span-4 flex flex-col lg:self-center text-left">
+      <div class="bg-slate-50 rounded-[2.5rem] border border-slate-200 h-[660px] flex flex-col relative overflow-hidden group/agenda shadow-inner">
+        
+        <!-- Cabecera de la Agenda -->
+        <div class="p-6 flex items-center justify-between border-b border-slate-200 bg-white shadow-sm relative z-10">
+          <h3 class="font-alternate text-xl text-[#291242] font-bold uppercase tracking-tight">
+            Agenda <span class="text-[#00DA5E] italic text-sm">Prográmate</span>
+          </h3>
+          <div class="w-10 h-10 bg-[#291242] rounded-xl flex items-center justify-center text-white shadow-lg">
+            <svg lucideCalendarDays [size]="18"></svg>
+          </div>
+        </div>
+        
+        <!-- Listado Desplazable -->
+        <div class="flex-1 overflow-y-auto relative bg-white/20 custom-scrollbar">
+          @if (isLoading || isRefreshing) {
+            <div class="h-full p-4">
+              <app-loading-state
+                title="Cargando agenda..."
+                description="Actualizando eventos destacados."
+              ></app-loading-state>
+            </div>
+          } @else if (isError) {
+            <div class="h-full p-4">
+              <app-error-state
+                title="No pudimos cargar la agenda"
+                [description]="error?.message || 'Intenta nuevamente.'"
+                (retry)="retryPreview()"
+              ></app-error-state>
+            </div>
+          } @else if (agendaItems.length === 0) {
+            <div class="h-full p-4">
+              <app-empty-state
+                title="No hay eventos destacados"
+                description="Vuelve pronto para revisar nuevas fechas."
+              ></app-empty-state>
+            </div>
+          } @else {
+            <div class="p-2 space-y-1 relative">
+              @for (e of agendaItems; track e.id; let idx = $index) {
+                <div
+                  (click)="onNavigateToAgendaEvent(e.id)"
+                  (mouseenter)="setActiveTab(idx)"
+                  [class]="'group relative min-h-[124px] p-5 rounded-[1.75rem] border transition-all duration-300 cursor-pointer ' + (activeTab === idx ? 'bg-white border-slate-200 shadow-md z-10' : 'bg-transparent border-transparent hover:bg-white/60')"
+                >
+                  <div class="relative z-10 flex items-start gap-4 h-full">
+                    <div [class]="'flex flex-col items-center justify-center min-w-[3.5rem] h-14 rounded-2xl transition-colors duration-300 ' + (activeTab === idx ? 'bg-[#291242] text-white' : 'bg-slate-200 text-slate-500 group-hover:bg-slate-300')">
+                      <span class="text-xl font-bold leading-none">{{ e.d }}</span>
+                      <span class="text-[0.55rem] font-bold uppercase tracking-tighter">{{ e.month }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0 text-left">
+                      <h5 [class]="'font-alternate text-[0.9rem] uppercase font-bold leading-tight line-clamp-2 transition-colors duration-300 ' + (activeTab === idx ? 'text-[#291242]' : 'text-slate-700')">
+                        {{ e.t }}
+                      </h5>
+                      <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <div class="flex items-center gap-1 min-w-0">
+                          <svg lucideMapPin [size]="12" [class]="'transition-colors duration-300 ' + (activeTab === idx ? 'text-[#00DA5E]' : 'text-slate-500')"></svg>
+                          <span [class]="'text-[0.65rem] uppercase font-bold tracking-widest truncate transition-colors duration-300 ' + (activeTab === idx ? 'text-[#291242]/70' : 'text-slate-500')">
+                            {{ e.l }}
+                          </span>
+                        </div>
+                        <span class="text-slate-300">•</span>
+                        <span [class]="'text-[0.65rem] uppercase font-bold tracking-widest truncate transition-colors duration-300 ' + (activeTab === idx ? 'text-[#291242]/70' : 'text-slate-500')">
+                          {{ e.cat }}
+                        </span>
+                      </div>
+                      <div class="mt-2 overflow-hidden">
+                        <p class="text-[0.7rem] font-nunito leading-relaxed text-slate-600 line-clamp-2 transition-all duration-300">
+                          {{ e.desc }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        
+        <!-- Enlace al Calendario (Pie de Agenda) -->
+        <div
+          (click)="onNavigate('agenda')"
+          class="bg-[#291242] text-white p-6 cursor-pointer group/banner transition-all duration-500 hover:bg-[#6100D7] flex items-center justify-between mt-auto border-t border-white/5 relative z-20 rounded-b-[2.5rem]"
+        >
+          <span class="font-alternate text-xs font-bold uppercase tracking-[0.2em]">Ver Calendario Completo</span>
+          <div class="bg-[#00DA5E] text-[#291242] p-2 rounded-lg transition-transform duration-500 group-hover/banner:translate-x-1 group-hover/banner:bg-white flex items-center justify-center">
+            <svg lucideChevronRight [size]="16" [strokeWidth]="3"></svg>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </div>
+</app-content-wrapper>

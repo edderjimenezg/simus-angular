@@ -1,0 +1,592 @@
+<main class="relative h-screen w-screen bg-[#0d0915] flex flex-col items-center justify-center px-4 overflow-hidden select-none">
+  <!-- Ambient Glowing Spheres -->
+  <div class="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#00DA5E]/8 blur-[130px] pointer-events-none z-0"></div>
+  <div class="absolute -bottom-60 -left-60 w-[600px] h-[600px] rounded-full bg-[#6100D7]/12 blur-[150px] pointer-events-none z-0"></div>
+  <div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[300px] h-[300px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none z-0"></div>
+
+  <!-- Internal Admin / Recovery / Captcha Screens -->
+  <div class="w-full max-w-md flex flex-col items-center relative z-10 text-center py-2">
+    <!-- Prominent Hero Website Logo -->
+    <img 
+      src="/assets/branding/pnmc-blanco.png" 
+      class="h-24 sm:h-28 md:h-32 w-auto object-contain mb-5 filter drop-shadow-[0_4px_32px_rgba(0,218,94,0.25)] transition-all duration-300 hover:scale-[1.03]" 
+      alt="PNMC Logo" 
+    />
+
+    <!-- Check if External Portal Mode -->
+    @if (isExternalPortal()) {
+      <!-- External Portal Login & Register Card -->
+      @if (showMailConfirm()) {
+        <!-- Activación de cuenta externa -->
+        <div class="w-full bg-white rounded-2xl shadow-2xl p-8 border border-slate-100 text-center space-y-5 animate-in fade-in duration-300">
+          <div class="h-16 w-16 mx-auto bg-emerald-50 border border-emerald-200 text-emerald-500 rounded-full flex items-center justify-center">
+            <svg lucideCheckCircle size="32"></svg>
+          </div>
+          <form (submit)="handleVerifyRegistrationCode($event)" class="space-y-4 text-left">
+            <div class="space-y-2 text-center">
+              <img src="/assets/branding/pnmc-blanco.png" alt="PNMC" class="mx-auto h-12 w-auto object-contain filter invert opacity-80" />
+              <h2 class="font-alternate text-lg font-bold uppercase tracking-wider text-slate-800">Activa tu cuenta</h2>
+              <p class="text-sm text-slate-500">
+                Hemos enviado un código de verificación al correo <strong class="text-slate-800">{{ externalEmail() }}</strong>.
+              </p>
+              <p class="text-xs text-slate-400 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                Ingresa el código para activar el usuario antes de iniciar sesión.
+              </p>
+            </div>
+            <div class="space-y-1">
+              <label for="ext-activation-code" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Código de activación</label>
+              <input
+                id="ext-activation-code"
+                type="text"
+                required
+                inputmode="numeric"
+                maxlength="6"
+                autocomplete="one-time-code"
+                placeholder="Ingresa el código de 6 dígitos"
+                [(ngModel)]="verificationCodeInput"
+                name="verificationCodeInput"
+                class="w-full rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-center text-lg font-black tracking-[0.3em] text-slate-900 outline-none focus:border-[#291242] transition"
+              />
+            </div>
+            @if (message()) {
+              <div [class]="'p-3 rounded-xl text-center text-xs font-semibold ' + (status() === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-slate-50 text-slate-600 border border-slate-200')">
+                {{ message() }}
+              </div>
+            }
+            <div class="grid gap-2">
+              <button
+                type="submit"
+                class="w-full bg-[#291242] hover:bg-[#3d1a63] text-white py-3 rounded-xl text-xs font-bold transition shadow-md cursor-pointer"
+              >
+                Confirmar código y activar cuenta
+              </button>
+              <button
+                type="button"
+                (click)="showMailConfirm.set(false); verificationCode.set(''); verificationCodeInput.set(''); pendingRegistration.set(null); message.set('');"
+                class="w-full rounded-xl border border-slate-200 px-4 py-3 text-xs font-bold text-slate-600 hover:border-slate-300 transition cursor-pointer"
+              >
+                Volver al registro
+              </button>
+            </div>
+          </form>
+        </div>
+      } @else {
+        <!-- Login / Register in External Portal -->
+        <div class="w-full rounded-[1.75rem] bg-slate-900/40 border border-white/10 backdrop-blur-xl shadow-[0_32px_64px_rgba(0,0,0,0.6)] relative terminal-card-glow text-left overflow-hidden">
+          <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#00DA5E]/30 to-transparent"></div>
+          
+          <div class="flex border-b border-white/10">
+            <button
+              type="button"
+              (click)="activeTab.set('login'); message.set('');"
+              [class]="'flex-1 py-4 text-xs font-bold uppercase tracking-wider transition cursor-pointer ' + (activeTab() === 'login' ? 'text-white border-b-2 border-[#00DA5E] bg-white/5' : 'text-white/45 hover:text-white/80')"
+            >
+              Colaborador Ingreso
+            </button>
+            <button
+              type="button"
+              (click)="activeTab.set('register'); message.set('');"
+              [class]="'flex-1 py-4 text-xs font-bold uppercase tracking-wider transition cursor-pointer ' + (activeTab() === 'register' ? 'text-white border-b-2 border-[#00DA5E] bg-white/5' : 'text-white/45 hover:text-white/80')"
+            >
+              Registrarse
+            </button>
+          </div>
+
+          <div class="p-6 sm:p-8">
+            <div class="text-center mb-6">
+              <h1 class="font-alternate text-xl uppercase font-bold text-white tracking-wide">Portal de Colaboradores</h1>
+              <p class="text-xs text-white/60 mt-1">Registra organizaciones, escuelas, lutieres y festivales al Mapa PNMC</p>
+            </div>
+
+            @if (activeTab() === 'login') {
+              <form (submit)="handleExternalLogin($event)" class="space-y-4">
+                <div class="space-y-1">
+                  <label for="ext-login-email" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Correo Electrónico</label>
+                  <input
+                    id="ext-login-email"
+                    type="email"
+                    required
+                    autocomplete="username"
+                    placeholder="correo@ejemplo.com"
+                    [(ngModel)]="externalEmail"
+                    name="externalEmail"
+                    class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label for="ext-login-password" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Contraseña</label>
+                  <div class="relative">
+                    <input
+                      id="ext-login-password"
+                      [type]="showLoginPassword() ? 'text' : 'password'"
+                      required
+                      autocomplete="current-password"
+                      placeholder="••••••••"
+                      [(ngModel)]="externalPassword"
+                      name="externalPassword"
+                      class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-12 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                    />
+                    <button
+                      type="button"
+                      (click)="showLoginPassword.set(!showLoginPassword())"
+                      [attr.aria-label]="showLoginPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      [attr.aria-pressed]="showLoginPassword()"
+                      class="absolute inset-y-0 right-0 px-3 text-white/50 hover:text-white transition cursor-pointer"
+                    >
+                      @if (showLoginPassword()) { <svg lucideEyeOff size="15"></svg> } @else { <svg lucideEye size="15"></svg> }
+                    </button>
+                  </div>
+                </div>
+
+                @if (message()) {
+                  <div [class]="'p-3 rounded-xl text-center text-xs font-semibold ' + (status() === 'error' ? 'bg-red-950/50 text-red-300 border border-red-800' : 'bg-slate-800 text-slate-300')">
+                    {{ message() }}
+                  </div>
+                }
+
+                <button
+                  type="submit"
+                  [disabled]="status() === 'loading'"
+                  class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] disabled:opacity-50 py-3 text-xs font-black text-slate-950 transition font-alternate uppercase cursor-pointer"
+                >
+                  @if (status() === 'loading') {
+                    <svg lucideRefreshCw size="13" class="animate-spin"></svg>
+                  }
+                  Entrar al Portal
+                </button>
+
+                <div class="pt-3 border-t border-white/10 space-y-2">
+                  <p class="text-[0.62rem] font-bold uppercase tracking-widest text-white/40 text-center">Acceso con terceros</p>
+                  <div class="grid grid-cols-1 gap-2">
+                    <button
+                      type="button"
+                      (click)="handleSocialAuth('Continuar con Google')"
+                      class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    >
+                      Continuar con Google
+                    </button>
+                    <button
+                      type="button"
+                      (click)="handleSocialAuth('Continuar con Apple')"
+                      class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    >
+                      Continuar con Apple
+                    </button>
+                    <button
+                      type="button"
+                      (click)="handleSocialAuth('Continuar con Microsoft')"
+                      class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                    >
+                      Continuar con Microsoft
+                    </button>
+                  </div>
+                </div>
+              </form>
+            } @else {
+              <!-- Registro de colaborador -->
+              <form (submit)="handleExternalRegister($event)" class="space-y-4">
+                <div class="space-y-1">
+                  <label for="ext-reg-name" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Nombre Completo / Razón Social</label>
+                  <input
+                    id="ext-reg-name"
+                    type="text"
+                    required
+                    autocomplete="name"
+                    placeholder="Ej. Fundación Cultural Suena"
+                    [(ngModel)]="fullName"
+                    name="fullName"
+                    class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label for="ext-reg-email" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Correo Electrónico</label>
+                  <input
+                    id="ext-reg-email"
+                    type="email"
+                    required
+                    autocomplete="email"
+                    placeholder="correo@organizacion.org"
+                    [(ngModel)]="externalEmail"
+                    name="externalEmail"
+                    class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                  />
+                </div>
+                <div class="space-y-1">
+                  <label for="ext-reg-password" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Contraseña</label>
+                  <div class="relative">
+                    <input
+                      id="ext-reg-password"
+                      [type]="showExternalPassword() ? 'text' : 'password'"
+                      required
+                      minlength="10"
+                      autocomplete="new-password"
+                      placeholder="Contraseña segura"
+                      [(ngModel)]="externalPassword"
+                      name="externalPassword"
+                      class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-12 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                    />
+                    <button
+                      type="button"
+                      (click)="showExternalPassword.set(!showExternalPassword())"
+                      [attr.aria-label]="showExternalPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      [attr.aria-pressed]="showExternalPassword()"
+                      class="absolute inset-y-0 right-0 px-3 text-white/50 hover:text-white transition cursor-pointer"
+                    >
+                      @if (showExternalPassword()) { <svg lucideEyeOff size="15"></svg> } @else { <svg lucideEye size="15"></svg> }
+                    </button>
+                  </div>
+                  <p class="text-[0.65rem] text-white/45 font-medium">Debe tener al menos 10 caracteres.</p>
+                </div>
+                <div class="space-y-1">
+                  <label for="ext-reg-confirm" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Confirmar Contraseña</label>
+                  <div class="relative">
+                    <input
+                      id="ext-reg-confirm"
+                      [type]="showConfirmPassword() ? 'text' : 'password'"
+                      required
+                      autocomplete="new-password"
+                      placeholder="Repite la contraseña"
+                      [(ngModel)]="confirmPassword"
+                      name="confirmPassword"
+                      class="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 pr-12 text-sm text-white outline-none focus:border-[#00DA5E] focus:ring-1 focus:ring-[#00DA5E]/30 transition placeholder:text-slate-500"
+                    />
+                    <button
+                      type="button"
+                      (click)="showConfirmPassword.set(!showConfirmPassword())"
+                      [attr.aria-label]="showConfirmPassword() ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'"
+                      [attr.aria-pressed]="showConfirmPassword()"
+                      class="absolute inset-y-0 right-0 px-3 text-white/50 hover:text-white transition cursor-pointer"
+                    >
+                      @if (showConfirmPassword()) { <svg lucideEyeOff size="15"></svg> } @else { <svg lucideEye size="15"></svg> }
+                    </button>
+                  </div>
+                </div>
+                <div class="space-y-1">
+                  <label for="ext-reg-profile" class="block text-xs font-bold uppercase tracking-wider text-slate-400">Tipo de Perfil</label>
+                  <select
+                    id="ext-reg-profile"
+                    [(ngModel)]="profileType"
+                    name="profileType"
+                    class="w-full rounded-xl bg-slate-900 border border-white/10 px-4 py-3 text-sm text-white outline-none focus:border-[#00DA5E] transition"
+                  >
+                    <option value="organizacion">Organización Cultural (Recomendado)</option>
+                    <option value="persona">Persona Natural / Artista Independiente</option>
+                  </select>
+                </div>
+
+                <div class="rounded-xl border border-white/10 bg-black/20 p-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    (click)="handleCaptchaClick()"
+                    [disabled]="captchaChecked() || captchaVerifying()"
+                    class="flex items-center gap-3 text-left focus:outline-none cursor-pointer"
+                  >
+                    <div class="h-6 w-6 rounded-md border border-white/20 bg-white/5 flex items-center justify-center shrink-0">
+                      @if (captchaVerifying()) {
+                        <svg lucideRefreshCw size="12" class="text-amber-400 animate-spin"></svg>
+                      }
+                      @if (captchaChecked()) {
+                        <svg lucideCheckCircle size="14" class="text-[#00DA5E]"></svg>
+                      }
+                    </div>
+                    <div>
+                      <p class="text-xs font-semibold text-white">Verificación de Seguridad</p>
+                      <p class="text-[0.62rem] text-slate-400">{{ captchaChecked() ? 'Robot verificado con éxito' : 'Haga clic para validar que no es un robot' }}</p>
+                    </div>
+                  </button>
+                  <svg lucideShieldCheck size="16" class="text-slate-500"></svg>
+                </div>
+
+                @if (message()) {
+                  <div class="p-3 rounded-xl text-center text-xs font-semibold bg-red-950/50 text-red-300 border border-red-800">
+                    {{ message() }}
+                  </div>
+                }
+
+                <button
+                  type="submit"
+                  [disabled]="status() === 'loading'"
+                  class="w-full flex items-center justify-center gap-2 rounded-xl bg-[#00DA5E] hover:bg-[#00c454] disabled:opacity-50 py-3 text-xs font-black text-slate-950 transition font-alternate uppercase cursor-pointer"
+                >
+                  @if (status() === 'loading') {
+                    <svg lucideRefreshCw size="13" class="animate-spin"></svg>
+                  }
+                  Registrar Cuenta
+                </button>
+              </form>
+            }
+
+            <div class="pt-4 mt-4 border-t border-white/10">
+              <button
+                type="button"
+                (click)="handleToggleInternal()"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 px-4 py-2.5 text-[0.68rem] font-black uppercase tracking-wider text-[#00DA5E] hover:text-[#00f56a] transition-all duration-300 cursor-pointer active:scale-[0.98]"
+              >
+                Volver al Ingreso Administrativo
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    } @else {
+      <!-- Internal Admin Console Card -->
+      <div class="w-full rounded-[1.75rem] bg-slate-900/40 border border-white/10 backdrop-blur-xl p-6 sm:p-8 shadow-[0_32px_64px_rgba(0,0,0,0.6)] relative terminal-card-glow text-left">
+        <div class="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#00DA5E]/30 to-transparent rounded-t-[1.75rem]"></div>
+        
+        @if (formMode() === 'login') {
+          <div class="mb-6">
+            <div class="-mt-11 sm:-mt-13 mb-3 relative z-20">
+              <h2 class="text-2xl sm:text-3xl md:text-[2.25rem] font-black uppercase tracking-tight font-display leading-none text-white select-none pointer-events-none drop-shadow-[0_8px_30px_rgba(0,0,0,0.9)]">
+                Centro de <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#00DA5E] via-[#00f56a] to-[#00b04c] drop-shadow-[0_2px_15px_rgba(0,218,94,0.35)]">Administración</span>
+              </h2>
+            </div>
+            <p class="text-[0.68rem] text-slate-400 mt-2 leading-relaxed font-medium">
+              Portal de acceso exclusivo para el equipo del <strong class="text-slate-200">Grupo de Música</strong> y aliados del <strong class="text-slate-200">Plan Nacional de Música para la Convivencia</strong>.
+            </p>
+          </div>
+
+          <form (submit)="handleSubmit($event)" class="space-y-4">
+            <div class="space-y-1.5 group">
+              <label for="admin-email" class="block text-[0.62rem] font-black uppercase tracking-[0.16em] text-slate-400 pl-1 group-focus-within:text-[#00DA5E] transition-colors duration-300">Correo electrónico</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500 pointer-events-none group-focus-within:text-[#00DA5E] transition-colors duration-300">
+                  <svg lucideMail size="15"></svg>
+                </span>
+                <input
+                  id="admin-email"
+                  type="email"
+                  [(ngModel)]="email"
+                  name="email"
+                  autocomplete="username"
+                  required
+                  [class]="'w-full rounded-xl bg-slate-950/50 border pl-11 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-300 ' + (inputsGlowing() ? 'border-[#00DA5E] ring-2 ring-[#00DA5E]/30 shadow-[0_0_15px_rgba(0,218,94,0.15)] bg-slate-950/70' : 'border-white/10 hover:border-white/20 focus:border-[#00DA5E] focus:ring-2 focus:ring-[#00DA5E]/20 focus:bg-slate-950/70 focus:shadow-[0_0_20px_rgba(0,218,94,0.1)]')"
+                />
+              </div>
+            </div>
+            
+            <div class="space-y-1.5 group">
+              <div class="flex items-center justify-between pl-1">
+                <label for="admin-password" class="block text-[0.62rem] font-black uppercase tracking-[0.16em] text-slate-400 group-focus-within:text-[#00DA5E] transition-colors duration-300">Contraseña</label>
+                <button 
+                  type="button" 
+                  (click)="formMode.set('recover'); recoverSuccess.set(false); recoverEmail.set('');" 
+                  class="text-[0.62rem] font-bold text-[#00DA5E] hover:underline cursor-pointer uppercase tracking-wider transition"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500 pointer-events-none group-focus-within:text-[#00DA5E] transition-colors duration-300">
+                  <svg lucideLock size="15"></svg>
+                </span>
+                <input
+                  id="admin-password"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  [(ngModel)]="password"
+                  name="password"
+                  autocomplete="current-password"
+                  required
+                  [class]="'w-full rounded-xl bg-slate-950/50 border pl-11 pr-12 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none transition-all duration-300 ' + (inputsGlowing() ? 'border-[#00DA5E] ring-2 ring-[#00DA5E]/30 shadow-[0_0_15px_rgba(0,218,94,0.15)] bg-slate-950/70' : 'border-white/10 hover:border-white/20 focus:border-[#00DA5E] focus:ring-2 focus:ring-[#00DA5E]/20 focus:bg-slate-950/70 focus:shadow-[0_0_20px_rgba(0,218,94,0.1)]')"
+                />
+                <button
+                  type="button"
+                  (click)="showPassword.set(!showPassword())"
+                  class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-[#00DA5E] transition-colors cursor-pointer"
+                >
+                  @if (showPassword()) { <svg lucideEyeOff size="15"></svg> } @else { <svg lucideEye size="15"></svg> }
+                </button>
+              </div>
+            </div>
+
+            @if (loginState().message && loginState().status !== 'idle') {
+              <div [class]="'flex items-center gap-3 rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider ' + (loginState().status === 'error' ? 'bg-rose-950/40 border border-rose-800/50 text-rose-300' : 'bg-slate-900/60 border border-[#00DA5E]/20 text-[#00DA5E]')">
+                @if (loginState().status === 'error') {
+                  <svg lucideAlertCircle size="14" class="shrink-0 text-rose-400"></svg>
+                } @else {
+                  <svg lucideRefreshCw size="14" class="animate-spin shrink-0 text-[#00DA5E]"></svg>
+                }
+                <span class="leading-snug text-[10px] sm:text-xs">{{ loginState().message }}</span>
+              </div>
+            }
+
+            <button
+              type="submit"
+              [disabled]="loginState().status === 'saving'"
+              class="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00DA5E] via-[#00f56a] to-[#00b04c] disabled:opacity-50 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-950 transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,218,94,0.4)] cursor-pointer select-none active:scale-[0.97] btn-shine-effect"
+            >
+              <svg lucideShieldCheck size="15"></svg>
+              Entrar al panel
+            </button>
+          </form>
+        } @else {
+          <!-- Recovery mode -->
+          <div class="mb-5">
+            <div class="flex items-center gap-3 mb-3.5">
+              <div class="relative flex items-center justify-center shrink-0">
+                <div class="absolute inset-0 rounded-lg bg-[#00DA5E]/20 animate-ping opacity-60"></div>
+                <div class="relative h-8 w-8 rounded-lg bg-slate-950/80 border border-[#00DA5E]/40 flex items-center justify-center shadow-[0_0_10px_rgba(0,218,94,0.15)]">
+                  <svg lucideRefreshCw size="14" class="text-[#00DA5E] animate-spin" style="animation-duration: 3s"></svg>
+                </div>
+              </div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#00DA5E]/10 text-[#00DA5E] border border-[#00DA5E]/20 shadow-[0_0_10px_rgba(0,218,94,0.05)]">
+                Recuperación
+              </span>
+            </div>
+            
+            <h2 class="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display leading-tight">
+              Recuperar <span class="bg-clip-text text-transparent bg-gradient-to-r from-[#00DA5E] to-[#00f56a] drop-shadow-[0_2px_10px_rgba(0,218,94,0.2)]">Contraseña</span>
+            </h2>
+            <p class="text-[0.68rem] text-slate-400 mt-2 leading-relaxed font-medium">Ingresa tu correo electrónico registrado y te enviaremos las instrucciones de restablecimiento.</p>
+          </div>
+
+          @if (!recoverSuccess()) {
+            <form (submit)="handleRecoverSubmit($event)" class="space-y-4">
+              <div class="space-y-1.5 group">
+                <label for="recover-email" class="block text-[0.62rem] font-black uppercase tracking-[0.16em] text-slate-400 pl-1 group-focus-within:text-[#00DA5E] transition-colors duration-300">Correo electrónico</label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-500 pointer-events-none group-focus-within:text-[#00DA5E] transition-colors duration-300">
+                    <svg lucideMail size="15"></svg>
+                  </span>
+                  <input
+                    id="recover-email"
+                    type="email"
+                    [(ngModel)]="recoverEmail"
+                    name="recoverEmail"
+                    required
+                    class="w-full rounded-xl bg-slate-950/50 border border-white/10 pl-11 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 outline-none hover:border-white/20 focus:border-[#00DA5E] focus:ring-2 focus:ring-[#00DA5E]/20 focus:bg-slate-950/70 focus:shadow-[0_0_20px_rgba(0,218,94,0.1)] transition-all duration-300"
+                  />
+                </div>
+              </div>
+
+              @if (loginState().message && loginState().status === 'saving') {
+                <div class="flex items-center gap-3 rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-slate-900/60 border border-[#00DA5E]/20 text-[#00DA5E]">
+                  <svg lucideRefreshCw size="14" class="animate-spin shrink-0 text-[#00DA5E]"></svg>
+                  <span class="leading-snug text-[10px] sm:text-xs">{{ loginState().message }}</span>
+                </div>
+              }
+
+              <button
+                type="submit"
+                [disabled]="loginState().status === 'saving'"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#00DA5E] via-[#00f56a] to-[#00b04c] disabled:opacity-50 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-950 transition-all duration-300 hover:shadow-[0_0_25px_rgba(0,218,94,0.4)] cursor-pointer select-none active:scale-[0.97] btn-shine-effect"
+              >
+                Enviar Enlace
+              </button>
+
+              <button
+                type="button"
+                (click)="formMode.set('login')"
+                class="w-full text-center text-[10px] sm:text-xs font-bold text-slate-400 hover:text-[#00DA5E] uppercase tracking-wider mt-3 hover:underline cursor-pointer transition-colors"
+              >
+                Volver al Inicio de Sesión
+              </button>
+            </form>
+          } @else {
+            <div class="space-y-4 text-center">
+              <div class="h-12 w-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+                <svg lucideCheckCircle2 size="24"></svg>
+              </div>
+              <div class="space-y-1">
+                <p class="text-xs sm:text-sm font-bold text-white uppercase tracking-wide">¡Solicitud Procesada!</p>
+                <p class="text-[10px] sm:text-xs text-slate-400 leading-relaxed">
+                  Hemos enviado un correo a <strong class="text-white">{{ recoverEmail() }}</strong> con las instrucciones y el enlace para restablecer tu contraseña.
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="formMode.set('login'); recoverSuccess.set(false);"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 px-5 py-2.5 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-white transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
+              >
+                Volver a Iniciar Sesión
+              </button>
+            </div>
+          }
+        }
+
+        <div class="pt-4 mt-4 border-t border-white/5">
+          <button
+            type="button"
+            (click)="handleToggleExternal()"
+            class="w-full flex items-center justify-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 px-4 py-2.5 text-[0.68rem] font-black uppercase tracking-wider text-[#00DA5E] hover:text-[#00f56a] transition-all duration-300 cursor-pointer group active:scale-[0.98]"
+          >
+            <span>Ingresar al Portal de Colaboradores Externos</span>
+            <svg lucideChevronRight size="12" class="transform group-hover:translate-x-1 transition-transform duration-300 text-[#00DA5E] group-hover:text-[#00f56a]"></svg>
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Institutional Endorsement (Ministry Logos) -->
+    <div class="mt-5 flex flex-col items-center gap-2 shrink-0 select-none">
+      <div class="flex items-center justify-center gap-4 sm:gap-5 flex-wrap">
+        <div class="w-[5.5rem] sm:w-[6.5rem] shrink-0">
+          <img src="/assets/branding/logo-gov-co.png" class="w-full h-auto object-contain" alt="GOV.CO" />
+        </div>
+        <div class="h-4 w-[1px] bg-white/20"></div>
+        <div class="w-[2.2rem] sm:w-[2.6rem] shrink-0">
+          <img src="/assets/branding/gov-co-footer.png" class="w-full h-auto object-contain" alt="Colombia" />
+        </div>
+        <div class="h-4 wpx bg-white/20"></div>
+        <div class="w-[2.9rem] sm:w-[3.5rem] shrink-0">
+          <img src="/assets/branding/Culturas-Blanco.png" class="w-full h-auto object-contain" alt="Ministerio de las Culturas" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVELOPMENT / TESTING ACCOUNTS FLOATING TOOL (Bottom-Left Corner) -->
+  <div class="fixed bottom-6 left-6 z-[4000] text-left">
+    <!-- Toggle Button -->
+    <button
+      type="button"
+      (click)="showDevPanel.set(!showDevPanel())"
+      [class]="'flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-2xl backdrop-blur-md text-xs font-bold transition-all duration-300 hover:scale-[1.03] select-none cursor-pointer ' + (showDevPanel() ? 'bg-[#00DA5E] border-[#00DA5E] text-slate-950 shadow-[0_0_15px_rgba(0,218,94,0.3)]' : 'bg-slate-900/90 border-white/10 text-[#00DA5E] hover:border-[#00DA5E]/30 hover:bg-slate-900')"
+    >
+      <svg lucideUserCheck size="14" [class.animate-pulse]="showDevPanel()"></svg>
+      <span>{{ showDevPanel() ? 'Cerrar Cuentas' : 'Cuentas de Prueba' }}</span>
+    </button>
+
+    <!-- Floating Dev Panel List -->
+    @if (showDevPanel()) {
+      <div class="absolute bottom-14 left-0 w-72 rounded-3xl bg-slate-950/95 border border-white/10 p-5 shadow-[0_16px_40px_rgba(0,0,0,0.7)] backdrop-blur-xl space-y-4 animate-in slide-in-from-bottom-2 duration-300">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-wider text-[#00DA5E]">Herramienta de Pruebas</p>
+          <p class="text-[9px] text-slate-400 mt-0.5 leading-snug">
+            Haz clic en una cuenta para autocompletar el login e ingresar rápidamente a evaluar cada módulo.
+          </p>
+        </div>
+
+        <div class="h-60 overflow-y-auto pr-1 space-y-2 no-scrollbar">
+          @for (role of adminRoles; track role.id) {
+            @if (ROLE_CREDENTIALS[role.id]) {
+              <button
+                type="button"
+                (click)="selectRole(role.id)"
+                [class]="'w-full flex items-center justify-between gap-3 text-left rounded-xl p-2.5 border transition-all cursor-pointer ' + (selectedRole() === role.id && !isExternalPortal() ? 'bg-white/10 border-[#00DA5E]/40 text-white' : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10 text-slate-300 hover:text-white')"
+              >
+                <div class="min-w-0">
+                  <p class="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <span [class]="'h-1.5 w-1.5 rounded-full ' + (role.id === 'webmaster' ? 'bg-violet-500' : role.id === 'gestor_interno' ? 'bg-blue-500' : role.id === 'aliado_admin' ? 'bg-purple-500' : role.id === 'aliado_editor' ? 'bg-orange-500' : role.id === 'aliado_lector' ? 'bg-slate-400' : 'bg-rose-500')"></span>
+                    {{ role.shortLabel }}
+                  </p>
+                  <p class="text-[9px] text-slate-400 truncate mt-0.5">{{ ROLE_CREDENTIALS[role.id].email }}</p>
+                </div>
+                <span class="text-[8px] font-black uppercase tracking-wider text-[#00DA5E]/80 bg-[#00DA5E]/10 rounded px-1 py-0.5 shrink-0">
+                  {{ selectedRole() === role.id && !isExternalPortal() ? 'Activo' : 'Cargar' }}
+                </span>
+              </button>
+            }
+          }
+        </div>
+
+        <!-- Critical Production Warning -->
+        <div class="rounded-xl bg-amber-500/10 border border-amber-500/20 p-2.5 text-[8.5px] text-amber-300 leading-normal flex gap-2">
+          <span class="shrink-0 text-xs">⚠️</span>
+          <p>
+            <strong>Atención:</strong> Este panel es exclusivo de desarrollo y testing. Recuerde removerlo antes del despliegue en producción.
+          </p>
+        </div>
+      </div>
+    }
+  </div>
+</main>

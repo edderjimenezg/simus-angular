@@ -1,0 +1,106 @@
+<app-content-wrapper className="bg-white overflow-hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-start">
+    <div class="lg:col-span-7 flex flex-col relative text-left">
+      <div class="space-y-8 mb-8">
+        <div class="relative group">
+          <div
+            class="font-gregor text-[4.5rem] lg:text-[8rem] select-none opacity-50 font-bold leading-none tracking-tight pointer-events-none uppercase"
+            style="color: #E6DAE5"
+          >
+            {{ getWebText('home_about_bg_word', 'IDENTIDAD') }}
+          </div>
+          <div class="absolute bottom-0 left-0 z-10 flex items-end gap-4 whitespace-nowrap">
+            <h2 class="font-gregor text-3xl lg:text-5xl text-[#291242] font-bold uppercase leading-none">
+              {{ getWebText('home_about_title', 'HUELLA Y EVOLUCIÓN') }}
+            </h2>
+            <div class="w-8 lg:w-12 h-1.5 bg-[#8BF784] rounded-full mb-1 opacity-80 group-hover:w-24 transition-all duration-500"></div>
+          </div>
+        </div>
+        <div class="space-y-6 max-w-2xl relative z-10">
+          <p class="text-xl lg:text-2xl text-[#291242] font-light font-nunito leading-snug">
+            {{ getWebText('home_about_quote', 'El PNMC 2025-2035 es una herramienta para que la música sea motor de vida, paz y justicia social.') }}
+          </p>
+          <div class="flex gap-5 border-l border-slate-200 pl-6 py-1">
+            <p class="text-sm lg:text-base text-slate-500 font-nunito leading-relaxed">
+              {{ getWebText('home_about_desc', 'Desde hace más de dos décadas, el Plan Nacional de Música para la Convivencia (PNMC) promueve la diversidad cultural de Colombia como un pilar para la paz y la equidad.') }}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-[2.5rem] overflow-hidden shadow-2xl bg-slate-900 border border-slate-100 relative z-10 aspect-[16/6.5]">
+        <img
+          [src]="artistsImage"
+          class="w-full h-full object-cover grayscale brightness-90"
+          alt="Músicos"
+        />
+      </div>
+    </div>
+    <div class="lg:col-span-5 flex flex-col lg:self-center text-left">
+      <div class="mb-8">
+        <span class="text-slate-400 font-bold text-[0.55rem] uppercase tracking-[0.3em] font-alternate block mb-2">
+          {{ getWebText('home_ejes_tag', 'EL PNMC TIENE UNA ESTRUCTURA ESTRATÉGICA') }}
+        </span>
+        <h3 class="text-[#291242] font-alternate text-3xl font-bold uppercase leading-none tracking-tight">
+          {{ getWebText('home_ejes_title', 'PLANTEADA EN TRES EJES BASE') }}
+        </h3>
+      </div>
+      <div class="space-y-4 mb-8">
+        <div
+          (click)="navigateToSection('ejes', 'musica-para-la-vida')"
+          class="flex items-center gap-6 p-6 rounded-2xl border border-slate-50 bg-white shadow-sm hover:shadow-md hover:border-slate-100 transition-all group cursor-pointer"
+        >
+          <span class="font-gregor text-4xl text-slate-100 font-bold group-hover:text-[#8BF784] transition-colors leading-none">01</span>
+          <div class="flex-1">
+            <h5 class="font-alternate text-lg text-[#291242] font-bold leading-tight mb-1">
+              {{ getWebText('eje01_title', 'MÚSICA PARA LA VIDA, EL DIÁLOGO INTERCULTURAL Y LA DIVERSIDAD BIOCULTURAL') }}
+            </h5>
+            <p class="text-[0.65rem] text-slate-400 font-medium">
+              {{ getWebText('eje01_c1_title', 'Apropiación') }} ; {{ getWebText('eje01_c2_title', 'Enfoque poblacional') }}
+            </p>
+          </div>
+          <svg lucideChevronRight [size]="16" class="text-slate-200 group-hover:text-[#291242] group-hover:translate-x-1 transition-all"></svg>
+        </div>
+
+        <div
+          (click)="navigateToSection('ejes', 'oficios-y-practicas')"
+          class="flex items-center gap-6 p-6 rounded-2xl border border-slate-50 bg-white shadow-sm hover:shadow-md hover:border-slate-100 transition-all group cursor-pointer"
+        >
+          <span class="font-gregor text-4xl text-slate-100 font-bold group-hover:text-[#8BF784] transition-colors leading-none">02</span>
+          <div class="flex-1">
+            <h5 class="font-alternate text-lg text-[#291242] font-bold leading-tight mb-1">
+              {{ getWebText('eje02_title', 'FORTALECIMIENTO DE LAS PRÁCTICAS, EXPRESIONES Y OFICIOS DE LA MÚSICA') }}
+            </h5>
+            <p class="text-[0.65rem] text-slate-400 font-medium">
+              {{ getWebText('eje02_c1_title', 'Formación') }} ; {{ getWebText('eje02_c2_title', 'Creación') }}
+            </p>
+          </div>
+          <svg lucideChevronRight [size]="16" class="text-slate-200 group-hover:text-[#291242] group-hover:translate-x-1 transition-all"></svg>
+        </div>
+
+        <div
+          (click)="navigateToSection('ejes', 'gobernanza')"
+          class="flex items-center gap-6 p-6 rounded-2xl border border-slate-50 bg-white shadow-sm hover:shadow-md hover:border-slate-100 transition-all group cursor-pointer"
+        >
+          <span class="font-gregor text-4xl text-slate-100 font-bold group-hover:text-[#8BF784] transition-colors leading-none">03</span>
+          <div class="flex-1">
+            <h5 class="font-alternate text-lg text-[#291242] font-bold leading-tight mb-1">
+              {{ getWebText('eje03_title', 'GOBERNANZA MUSICAL E INTEGRACIÓN CULTURAL E INTERSECTORIAL') }}
+            </h5>
+            <p class="text-[0.65rem] text-slate-400 font-medium">
+              {{ getWebText('eje03_c1_title', 'Participación') }} ; {{ getWebText('eje03_c2_title', 'Sostenibilidad') }}
+            </p>
+          </div>
+          <svg lucideChevronRight [size]="16" class="text-slate-200 group-hover:text-[#291242] group-hover:translate-x-1 transition-all"></svg>
+        </div>
+      </div>
+      <button
+        type="button"
+        (click)="navigateToPage('pnmc')"
+        class="bg-[#291242] text-white self-start px-8 py-3 rounded-xl font-bold text-[0.7rem] uppercase font-alternate tracking-widest flex items-center gap-3 hover:bg-[#6100D7] transition-all shadow-xl cursor-pointer border-0"
+      >
+        DETALLES DEL PNMC
+        <svg lucideArrowRight [size]="14"></svg>
+      </button>
+    </div>
+  </div>
+</app-content-wrapper>

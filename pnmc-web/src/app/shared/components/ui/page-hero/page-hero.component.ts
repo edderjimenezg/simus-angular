@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TwoToneLineTitleComponent } from '../two-tone-line-title/two-tone-line-title.component';
+import { HeroEyebrowComponent } from '../hero-eyebrow/hero-eyebrow.component';
 import { LucideChevronDown } from '@lucide/angular';
 
 @Component({
@@ -9,6 +10,7 @@ import { LucideChevronDown } from '@lucide/angular';
   imports: [
     CommonModule,
     TwoToneLineTitleComponent,
+    HeroEyebrowComponent,
     LucideChevronDown
   ],
   templateUrl: './page-hero.component.html',

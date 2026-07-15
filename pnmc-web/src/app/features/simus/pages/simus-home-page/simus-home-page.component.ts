@@ -1,20 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { LucideArrowRight, LucideBookOpen, LucideBuilding2, LucideCircleHelp, LucideLandmark, LucideLibrary, LucideMap, LucideMapPin, LucideMusic2, LucideUsers2, LucideUsersRound } from '@lucide/angular';
+import { ECOSYSTEM_CATEGORIES, EcosystemCategory } from '../../../../core/services/ecosystem-categories.config';
 import { MapDataService } from '../../../../core/services/map-data.service';
 import { NavigationService } from '../../../../core/services/navigation.service';
 import { PageHeroComponent } from '../../../../shared/components/ui/page-hero/page-hero.component';
-
-type EcosystemCategory = {
-  title: string;
-  route: string;
-  layer: string;
-  description: string;
-  status: 'Disponible' | 'Próximamente';
-  icon: 'school' | 'groups' | 'agents' | 'spaces' | 'festivals' | 'markets' | 'networks' | 'luthier';
-  countKey?: 'schools' | 'festivals' | 'markets' | 'networks' | 'lutiers';
-  group: 'actors' | 'processes';
-};
 
 @Component({
   selector: 'app-simus-home-page',
@@ -42,16 +32,7 @@ export class SimusHomePageComponent implements OnInit {
   readonly recordsByType = signal<Record<string, number>>({});
   readonly isLoadingEcosystem = signal(true);
 
-  readonly ecosystemCategories: EcosystemCategory[] = [
-    { title: 'Escuelas de música', route: 'simus/escuelas', layer: 'Escuelas de Música', description: 'Procesos formativos, capacidades pedagógicas y presencia territorial.', status: 'Disponible', icon: 'school', countKey: 'schools', group: 'actors' },
-    { title: 'Agrupaciones', route: 'simus/agrupaciones', layer: 'General', description: 'Procesos colectivos, formatos y prácticas musicales.', status: 'Próximamente', icon: 'groups', group: 'actors' },
-    { title: 'Agentes', route: 'simus/agentes', layer: 'General', description: 'Personas, organizaciones y oficios que articulan el sector.', status: 'Próximamente', icon: 'agents', group: 'actors' },
-    { title: 'Escenarios', route: 'simus/escenarios', layer: 'General', description: 'Infraestructura y lugares para creación y circulación.', status: 'Próximamente', icon: 'spaces', group: 'actors' },
-    { title: 'Festivales', route: 'simus/festivales', layer: 'Festivales', description: 'Celebraciones, encuentros y circuitos de circulación.', status: 'Próximamente', icon: 'festivals', countKey: 'festivals', group: 'processes' },
-    { title: 'Mercados musicales', route: 'simus/mercados-musicales', layer: 'Mercados Musicales', description: 'Nodos de intercambio, visibilización y profesionalización.', status: 'Próximamente', icon: 'markets', countKey: 'markets', group: 'processes' },
-    { title: 'Redes y documentación', route: 'simus/redes-documentacion', layer: 'Redes de Documentación', description: 'Memoria, archivos, investigación y redes de conocimiento.', status: 'Próximamente', icon: 'networks', countKey: 'networks', group: 'processes' },
-    { title: 'Lutería', route: 'simus/luteria', layer: 'Lutieres', description: 'Saberes, construcción y reparación de instrumentos.', status: 'Próximamente', icon: 'luthier', countKey: 'lutiers', group: 'processes' },
-  ];
+  readonly ecosystemCategories: EcosystemCategory[] = ECOSYSTEM_CATEGORIES;
 
   readonly actorCategories = computed(() => this.ecosystemCategories.filter(category => category.group === 'actors'));
   readonly processCategories = computed(() => this.ecosystemCategories.filter(category => category.group === 'processes'));

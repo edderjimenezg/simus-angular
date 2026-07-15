@@ -18,6 +18,16 @@ La única comunicación de datos del frontend ocurre mediante `pnmc-api`; la API
 ./scripts/dev-up.sh
 ```
 
+Para detener el frontend, API y la base de datos Docker sin borrar sus datos:
+
+```bash
+./scripts/dev-down.sh
+```
+
+En macOS también puedes hacer doble clic en `Iniciar PNMC.command` o
+`Detener PNMC.command` desde Finder. Estos accesos abren Terminal y muestran
+el resultado antes de cerrarse.
+
 O por separado:
 
 ```bash

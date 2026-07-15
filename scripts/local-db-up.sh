@@ -6,6 +6,7 @@ COMPOSE_FILE="$ROOT_DIR/docker-compose.local.yml"
 DB_NAME="${PNMC_LOCAL_DB_NAME:-PNMC_LOCAL}"
 DB_PASSWORD="${PNMC_LOCAL_SA_PASSWORD:-PnmcLocal_2026!}"
 DB_PORT="${PNMC_LOCAL_SQL_PORT:-14333}"
+SQL_TOOLS_IMAGE="${PNMC_LOCAL_SQL_TOOLS_IMAGE:-mcr.microsoft.com/mssql-tools}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "[pnmc] Docker CLI no esta disponible."
@@ -15,6 +16,12 @@ fi
 
 echo "[pnmc] Iniciando SQL Server local..."
 docker compose -f "$COMPOSE_FILE" up -d sqlserver
+SQL_NETWORK="$(docker inspect pnmc-sqlserver --format '{{range $network, $_ := .NetworkSettings.Networks}}{{$network}}{{end}}')"
+
+if [[ -z "$SQL_NETWORK" ]]; then
+  echo "[pnmc] No se pudo determinar la red del contenedor SQL Server."
+  exit 1
+fi
 
 echo "[pnmc] Esperando conexion con SQL Server..."
 for _ in {1..90}; do
@@ -37,6 +44,15 @@ for _ in {1..90}; do
     break
   fi
 
+  # Azure SQL Edge ya no incluye sqlcmd en todas sus variantes. En ese caso,
+  # se usa el cliente oficial en un contenedor efimero dentro de la red del SQL.
+  if docker run --rm --platform linux/amd64 --network "$SQL_NETWORK" "$SQL_TOOLS_IMAGE" \
+    /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$DB_PASSWORD" -C -l 5 -Q "SELECT 1" >/dev/null 2>&1; then
+    SQLCMD_MODE="tools-container"
+    SQLCMD="/opt/mssql-tools/bin/sqlcmd"
+    break
+  fi
+
   sleep 2
 done
 
@@ -51,6 +67,21 @@ if [[ "${SQLCMD_MODE:-}" == "host" ]]; then
   sqlcmd -S "127.0.0.1,$DB_PORT" -U sa -P "$DB_PASSWORD" -C \
     -Q "IF DB_ID(N'$DB_NAME') IS NULL CREATE DATABASE [$DB_NAME];"
 else
+  if [[ "${SQLCMD_MODE:-}" == "tools-container" ]]; then
+    docker run --rm --platform linux/amd64 --network "$SQL_NETWORK" "$SQL_TOOLS_IMAGE" \
+      /opt/mssql-tools/bin/sqlcmd \
+      -S sqlserver \
+      -U sa \
+      -P "$DB_PASSWORD" \
+      -C \
+      -Q "IF DB_ID(N'$DB_NAME') IS NULL CREATE DATABASE [$DB_NAME];"
+    echo "[pnmc] Base local lista."
+    echo "[pnmc] Host: 127.0.0.1,$DB_PORT"
+    echo "[pnmc] Database: $DB_NAME"
+    echo "[pnmc] User: sa"
+    exit 0
+  fi
+
   docker exec pnmc-sqlserver "$SQLCMD" \
     -S localhost \
     -U sa \

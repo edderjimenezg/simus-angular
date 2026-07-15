@@ -5,10 +5,12 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DB_NAME="${PNMC_LOCAL_DB_NAME:-PNMC_LOCAL}"
 DB_PASSWORD="${PNMC_LOCAL_SA_PASSWORD:-PnmcLocal_2026!}"
 DB_PORT="${PNMC_LOCAL_SQL_PORT:-14333}"
+SQL_TOOLS_IMAGE="${PNMC_LOCAL_SQL_TOOLS_IMAGE:-mcr.microsoft.com/mssql-tools}"
 
 echo "[pnmc-db] Detectando sqlcmd..."
 SQLCMD=""
 SQLCMD_MODE=""
+SQL_NETWORK="$(docker inspect pnmc-sqlserver --format '{{range $network, $_ := .NetworkSettings.Networks}}{{$network}}{{end}}')"
 if command -v sqlcmd >/dev/null 2>&1 \
   && sqlcmd -S "127.0.0.1,$DB_PORT" -U sa -P "$DB_PASSWORD" -C -Q "SELECT 1" >/dev/null 2>&1; then
   SQLCMD="$(command -v sqlcmd)"
@@ -19,6 +21,10 @@ elif docker exec pnmc-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
 elif docker exec pnmc-sqlserver /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$DB_PASSWORD" -Q "SELECT 1" >/dev/null 2>&1; then
   SQLCMD="/opt/mssql-tools/bin/sqlcmd"
   SQLCMD_MODE="container"
+elif docker run --rm --platform linux/amd64 --network "$SQL_NETWORK" "$SQL_TOOLS_IMAGE" \
+  /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$DB_PASSWORD" -C -l 5 -Q "SELECT 1" >/dev/null 2>&1; then
+  SQLCMD_MODE="tools-container"
+  SQLCMD="/opt/mssql-tools/bin/sqlcmd"
 fi
 
 if [[ -z "$SQLCMD" ]]; then
@@ -32,6 +38,9 @@ run_sql_file() {
   local file_path="$1"
   if [[ "$SQLCMD_MODE" == "host" ]]; then
     (cat "$file_path"; echo ""; echo "GO") | "$SQLCMD" -S "127.0.0.1,$DB_PORT" -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b
+  elif [[ "$SQLCMD_MODE" == "tools-container" ]]; then
+    (cat "$file_path"; echo ""; echo "GO") | docker run --rm -i --platform linux/amd64 --network "$SQL_NETWORK" "$SQL_TOOLS_IMAGE" \
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b
   else
     (cat "$file_path"; echo ""; echo "GO") | docker exec -i pnmc-sqlserver "$SQLCMD" \
       -S localhost -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b
@@ -42,6 +51,9 @@ run_sql_query() {
   local query="$1"
   if [[ "$SQLCMD_MODE" == "host" ]]; then
     "$SQLCMD" -S "127.0.0.1,$DB_PORT" -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b -Q "$query"
+  elif [[ "$SQLCMD_MODE" == "tools-container" ]]; then
+    docker run --rm -i --platform linux/amd64 --network "$SQL_NETWORK" "$SQL_TOOLS_IMAGE" \
+      /opt/mssql-tools/bin/sqlcmd -S sqlserver -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b -Q "$query"
   else
     docker exec -i pnmc-sqlserver "$SQLCMD" \
       -S localhost -U sa -P "$DB_PASSWORD" -d "$DB_NAME" -C -b \
